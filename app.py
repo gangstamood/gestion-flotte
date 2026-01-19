@@ -514,8 +514,12 @@ elif page == "⛽ Bons de Carburant":
     st.subheader("📋 Historique")
     
     if bons_carburant:
-        bons_df['prix_litre'] = bons_df.apply(lambda r: round(float(r.get('montant', 0)) / float(r.get('volume', 1)), 3) if float(r.get('volume', 0)) > 0 else 0, axis=1)
-            lambda r: round(r['montant'] / r['volume'], 3) if r['volume'] > 0 else 0, ax
+        bons_df = pd.DataFrame(bons_carburant)
+        bons_df['volume'] = pd.to_numeric(bons_df.get('volume', 0), errors='coerce').fillna(0)
+        bons_df['montant'] = pd.to_numeric(bons_df.get('montant', 0), errors='coerce').fillna(0)
+        bons_df['prix_litre'] = bons_df.apply(lambda r: round(r['montant'] / r['volume'], 3) if r['volume'] > 0 else 0, axis=1)
+        bons_df['type_carburant'] = bons_df['type_carburant'].replace('', '-')
+        st.dataframe(bons_df, use_container_width=True, hide_index=True)
 
 elif page == "🔨 Pannes & Interventions":
     st.title("🔨 Interventions")
