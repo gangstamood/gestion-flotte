@@ -7,249 +7,157 @@ import json
 
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide")
 
-# CONNEXION BASE DE DONNÉES
+# CONNEXION GOOGLE SHEETS
 @st.cache_resource
-def get_connection():
-    return psycopg2.connect(
-        host=st.secrets["database"]["host"],
-        port=st.secrets["database"]["port"],
-        database=st.secrets["database"]["database"],
-        user=st.secrets["database"]["user"],
-        password=st.secrets["database"]["password"],
-        cursor_factory=RealDictCursor,
-        sslmode='require'
+def get_sheets_service():
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=["https://www.googleapis.com/auth/spreadsheets"]
     )
+    return build('sheets', 'v4', credentials=credentials)
+
+SPREADSHEET_ID = st.secrets["google_sheets"]["spreadsheet_id"]
+service = get_sheets_service()
+
+def read_sheet(sheet_name):
+    """Lit une feuille Google Sheets et retourne une liste de dictionnaires"""
+    try:
+        result = service.spreadsheets().values().get(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"{sheet_name}!A:Z"
+        ).execute()
+        values = result.get('values', [])
+        if not values or len(values) < 2:
+            return []
+        headers = values[0]
+        return [dict(zip(headers, row + [''] * (len(headers) - len(row)))) for row in values[1:]]
+    except:
+        return []
+
+def write_sheet(sheet_name, data):
+    """Écrit des données dans une feuille Google Sheets"""
+    if not data:
+        return
+    headers = list(data[0].keys())
+    values = [headers] + [[row.get(h, '') for h in headers] for row in data]
+    service.spreadsheets().values().update(
+        spreadsheetId=SPREADSHEET_ID,
+        range=f"{sheet_name}!A1",
+        valueInputOption="RAW",
+        body={"values": values}
+    ).execute()
 
 def init_database():
-    """Crée les tables si elles n'existent pas"""
-    conn = get_connection()
-    cur = conn.cursor()
-    
-    # Table véhicules
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS vehicules (
-            immatriculation TEXT PRIMARY KEY,
-            type TEXT,
-            marque TEXT
-        )
-    """)
-    
-    # Table attributions
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS attributions (
-            id SERIAL PRIMARY KEY,
-            immatriculation TEXT,
-            service TEXT,
-            date TEXT,
-            heure TEXT,
-            retourne TEXT
-        )
-    """)
-    
-    # Table catégories
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS categories (
-            id SERIAL PRIMARY KEY,
-            nom TEXT UNIQUE
-        )
-    """)
-    
-    # Table services
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS services (
-            id SERIAL PRIMARY KEY,
-            nom TEXT UNIQUE
-        )
-    """)
-    
-    # Table interventions
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS interventions (
-            id SERIAL PRIMARY KEY,
-            immatriculation TEXT,
-            type TEXT,
-            date TEXT,
-            heure TEXT,
-            commentaire TEXT,
-            statut TEXT
-        )
-    """)
-    
-    # Table bons carburant
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS carburant (
-            numero_bon TEXT PRIMARY KEY,
-            immatriculation TEXT,
-            service TEXT,
-            date TEXT,
-            numero_carte TEXT,
-            type_carburant TEXT,
-            volume REAL,
-            montant REAL,
-            notes TEXT,
-            statut TEXT
-        )
-    """)
-    
-    conn.commit()
-    cur.close()
+    """Crée les feuilles si elles n'existent pas"""
+    try:
+        sheet_metadata = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
+        existing_sheets = [s['properties']['title'] for s in sheet_metadata['sheets']]
+        
+        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant']
+        
+        for sheet_name in required_sheets:
+            if sheet_name not in existing_sheets:
+                service.spreadsheets().batchUpdate(
+                    spreadsheetId=SPREADSHEET_ID,
+                    body={"requests": [{"addSheet": {"properties": {"title": sheet_name}}}]}
+                ).execute()
+    except:
+        pass
 
 # Initialiser la base
 init_database()
 
 # FONCTIONS CRUD
 def get_vehicules():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM vehicules ORDER BY immatriculation")
-    result = cur.fetchall()
-    cur.close()
-    return [dict(row) for row in result]
+    return read_sheet('vehicules')
 
 def add_vehicule(immat, type_v, marque):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO vehicules (immatriculation, type, marque) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-        (immat, type_v, marque)
-    )
-    conn.commit()
-    cur.close()
+    vehicules = get_vehicules()
+    if not any(v.get('immatriculation') == immat for v in vehicules):
+        vehicules.append({'immatriculation': immat, 'type': type_v, 'marque': marque})
+        write_sheet('vehicules', vehicules)
 
 def get_attributions():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM attributions ORDER BY id DESC")
-    result = cur.fetchall()
-    cur.close()
-    return [dict(row) for row in result]
+    return read_sheet('attributions')
 
 def add_attribution(immat, service, date, heure):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO attributions (immatriculation, service, date, heure) VALUES (%s, %s, %s, %s)",
-        (immat, service, date, heure)
-    )
-    conn.commit()
-    cur.close()
+    attributions = get_attributions()
+    attributions.append({'immatriculation': immat, 'service': service, 'date': date, 'heure': heure, 'retourne': ''})
+    write_sheet('attributions', attributions)
 
 def retourner_vehicule(immat):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "UPDATE attributions SET retourne = %s WHERE immatriculation = %s AND retourne IS NULL",
-        (datetime.now().strftime("%d/%m/%Y %H:%M"), immat)
-    )
-    conn.commit()
-    cur.close()
+    attributions = get_attributions()
+    for attr in attributions:
+        if attr.get('immatriculation') == immat and not attr.get('retourne'):
+            attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+    write_sheet('attributions', attributions)
 
 def get_categories():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT nom FROM categories ORDER BY nom")
-    result = cur.fetchall()
-    cur.close()
-    cats = [row['nom'] for row in result]
+    cats = read_sheet('categories')
     if not cats:
-        # Catégories par défaut
-        defaults = ["Camion", "Fourgon", "Tractopelle", "Tondeuse", "Utilitaire", "Autre"]
-        for cat in defaults:
-            add_category(cat)
-        return defaults
-    return cats
+        defaults = [{'nom': c} for c in ["Camion", "Fourgon", "Tractopelle", "Tondeuse", "Utilitaire", "Autre"]]
+        write_sheet('categories', defaults)
+        return ["Camion", "Fourgon", "Tractopelle", "Tondeuse", "Utilitaire", "Autre"]
+    return [c.get('nom', '') for c in cats if c.get('nom')]
 
 def add_category(nom):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("INSERT INTO categories (nom) VALUES (%s) ON CONFLICT DO NOTHING", (nom,))
-    conn.commit()
-    cur.close()
+    cats = get_categories()
+    if nom not in cats:
+        write_sheet('categories', [{'nom': c} for c in cats + [nom]])
 
 def delete_category(nom):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM categories WHERE nom = %s", (nom,))
-    conn.commit()
-    cur.close()
+    cats = [c for c in get_categories() if c != nom]
+    write_sheet('categories', [{'nom': c} for c in cats])
 
 def get_services():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT nom FROM services ORDER BY nom")
-    result = cur.fetchall()
-    cur.close()
-    srvs = [row['nom'] for row in result]
+    srvs = read_sheet('services')
     if not srvs:
-        defaults = ["Voirie", "Bâtiment", "Espaces verts"]
-        for srv in defaults:
-            add_service(srv)
-        return defaults
-    return srvs
+        defaults = [{'nom': s} for s in ["Voirie", "Bâtiment", "Espaces verts"]]
+        write_sheet('services', defaults)
+        return ["Voirie", "Bâtiment", "Espaces verts"]
+    return [s.get('nom', '') for s in srvs if s.get('nom')]
 
 def add_service(nom):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("INSERT INTO services (nom) VALUES (%s) ON CONFLICT DO NOTHING", (nom,))
-    conn.commit()
-    cur.close()
+    srvs = get_services()
+    if nom not in srvs:
+        write_sheet('services', [{'nom': s} for s in srvs + [nom]])
 
 def delete_service(nom):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM services WHERE nom = %s", (nom,))
-    conn.commit()
-    cur.close()
+    srvs = [s for s in get_services() if s != nom]
+    write_sheet('services', [{'nom': s} for s in srvs])
 
 def get_interventions():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM interventions ORDER BY id DESC")
-    result = cur.fetchall()
-    cur.close()
-    return [dict(row) for row in result]
+    return read_sheet('interventions')
 
 def add_intervention(immat, type_i, date, heure, comm, statut):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO interventions (immatriculation, type, date, heure, commentaire, statut) VALUES (%s, %s, %s, %s, %s, %s)",
-        (immat, type_i, date, heure, comm, statut)
-    )
-    conn.commit()
-    cur.close()
+    interventions = get_interventions()
+    interventions.append({
+        'immatriculation': immat,
+        'type': type_i,
+        'date': date,
+        'heure': heure,
+        'commentaire': comm,
+        'statut': statut
+    })
+    write_sheet('interventions', interventions)
 
 def get_carburant():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM carburant ORDER BY numero_bon DESC")
-    result = cur.fetchall()
-    cur.close()
-    return [dict(row) for row in result]
+    return read_sheet('carburant')
 
 def add_bon_carburant(bon):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        """INSERT INTO carburant (numero_bon, immatriculation, service, date, numero_carte, 
-           type_carburant, volume, montant, notes, statut) 
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-        (bon['numero_bon'], bon['immatriculation'], bon['service'], bon['date'], 
-         bon['numero_carte'], bon['type_carburant'], bon['volume'], bon['montant'], 
-         bon['notes'], bon['statut'])
-    )
-    conn.commit()
-    cur.close()
+    bons = get_carburant()
+    bons.append(bon)
+    write_sheet('carburant', bons)
 
 def update_bon_carburant(numero_bon, type_carb, volume, montant):
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "UPDATE carburant SET type_carburant = %s, volume = %s, montant = %s, statut = 'Saisi' WHERE numero_bon = %s",
-        (type_carb, volume, montant, numero_bon)
-    )
-    conn.commit()
-    cur.close()
+    bons = get_carburant()
+    for bon in bons:
+        if bon.get('numero_bon') == numero_bon:
+            bon['type_carburant'] = type_carb
+            bon['volume'] = str(volume)
+            bon['montant'] = str(montant)
+            bon['statut'] = 'Saisi'
+    write_sheet('carburant', bons)
 
 def verifier_alertes(attributions):
     alertes = []
