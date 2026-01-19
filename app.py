@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import json
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide")
 
