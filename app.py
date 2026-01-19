@@ -9,6 +9,7 @@ from reportlab.lib.utils import ImageReader
 import io
 
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide")
+st.write("Secrets disponibles :", list(st.secrets.keys()))
 
 # AUTHENTIFICATION PAR MOT DE PASSE
 def check_password():
