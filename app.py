@@ -485,10 +485,9 @@ with st.form("form_bon"):
                 st.info("💡 Vous pouvez aussi imprimer avec Ctrl+P (Cmd+P)")
             else:
                 st.error("❌ Veuillez remplir tous les champs obligatoires")
-    
-    st.markdown("---")
-    st.subheader("📥 Saisir données bon retourné")
-    
+                st.markdown("---")
+                st.subheader("📥 Saisir données bon retourné")
+
     non_saisis = [b for b in bons_carburant if b['statut'] == "Non saisi"]
     
     if non_saisis:
