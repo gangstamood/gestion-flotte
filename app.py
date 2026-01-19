@@ -391,10 +391,10 @@ elif page == "🔧 Attribuer un véhicule":
         st.dataframe(pd.DataFrame(attributions), use_container_width=True, hide_index=True)
 
 elif page == "⛽ Bons de Carburant":
-    st.title("⛽ Bons de Carburant")
-    st.subheader("📝 Générer un Bon")
+    st.title("⛽ Gestion des Bons de Carburant")
+    st.subheader("📝 Générer un Bon de Carburant")
     
-with st.form("form_bon"):
+    with st.form("form_bon"):
         col1, col2 = st.columns(2)
         
         with col1:
@@ -454,7 +454,6 @@ with st.form("form_bon"):
                 st.success(f"✅ Bon {num_bon} généré !")
                 st.markdown("---")
                 
-                # Affichage HTML du bon
                 bon_html = f"""
                 <div style="border: 2px solid #333; padding: 30px; border-radius: 10px; background: #fff; max-width: 600px; margin: auto;">
                     <h2 style="text-align: center;">BON DE CARBURANT</h2>
@@ -472,7 +471,6 @@ with st.form("form_bon"):
                 """
                 st.markdown(bon_html, unsafe_allow_html=True)
                 
-                # Bouton de téléchargement PDF
                 pdf_buffer = generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url if logo_url else None)
                 st.download_button(
                     label="📥 Télécharger le bon en PDF",
@@ -485,9 +483,10 @@ with st.form("form_bon"):
                 st.info("💡 Vous pouvez aussi imprimer avec Ctrl+P (Cmd+P)")
             else:
                 st.error("❌ Veuillez remplir tous les champs obligatoires")
-                st.markdown("---")
-                st.subheader("📥 Saisir données bon retourné")
-
+    
+    st.markdown("---")
+    st.subheader("📥 Saisir données bon retourné")
+    
     non_saisis = [b for b in bons_carburant if b['statut'] == "Non saisi"]
     
     if non_saisis:
@@ -517,10 +516,7 @@ with st.form("form_bon"):
     if bons_carburant:
         bons_df = pd.DataFrame(bons_carburant)
         bons_df['prix_litre'] = bons_df.apply(
-            lambda r: round(r['montant'] / r['volume'], 3) if r['volume'] > 0 else 0, axis=1
-        )
-        bons_df['type_carburant'] = bons_df['type_carburant'].replace('', '-')
-        st.dataframe(bons_df, use_container_width=True, hide_index=True)
+            lambda r: round(r['montant'] / r['volume'], 3) if r['volume'] > 0 else 0, ax
 
 elif page == "🔨 Pannes & Interventions":
     st.title("🔨 Interventions")
