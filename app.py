@@ -514,8 +514,7 @@ elif page == "⛽ Bons de Carburant":
     st.subheader("📋 Historique")
     
     if bons_carburant:
-        bons_df = pd.DataFrame(bons_carburant)
-        bons_df['prix_litre'] = bons_df.apply(
+        bons_df['prix_litre'] = bons_df.apply(lambda r: round(float(r.get('montant', 0)) / float(r.get('volume', 1)), 3) if float(r.get('volume', 0)) > 0 else 0, axis=1)
             lambda r: round(r['montant'] / r['volume'], 3) if r['volume'] > 0 else 0, ax
 
 elif page == "🔨 Pannes & Interventions":
