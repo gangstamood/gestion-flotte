@@ -21,7 +21,7 @@ sheets_service = get_sheets_service()
 def read_sheet(sheet_name):
     """Lit une feuille Google Sheets et retourne une liste de dictionnaires"""
     try:
-        result = service.spreadsheets().values().get(
+        result = sheets_service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
             range=f"{sheet_name}!A:Z"
         ).execute()
@@ -39,7 +39,7 @@ def write_sheet(sheet_name, data):
         return
     headers = list(data[0].keys())
     values = [headers] + [[row.get(h, '') for h in headers] for row in data]
-    service.spreadsheets().values().update(
+    sheets_service.spreadsheets().values().update(
         spreadsheetId=SPREADSHEET_ID,
         range=f"{sheet_name}!A1",
         valueInputOption="RAW",
@@ -49,14 +49,14 @@ def write_sheet(sheet_name, data):
 def init_database():
     """Crée les feuilles si elles n'existent pas"""
     try:
-        sheet_metadata = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
+        sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
         existing_sheets = [s['properties']['title'] for s in sheet_metadata['sheets']]
         
         required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant']
         
         for sheet_name in required_sheets:
             if sheet_name not in existing_sheets:
-                service.spreadsheets().batchUpdate(
+                sheets_service.spreadsheets().batchUpdate(
                     spreadsheetId=SPREADSHEET_ID,
                     body={"requests": [{"addSheet": {"properties": {"title": sheet_name}}}]}
                 ).execute()
