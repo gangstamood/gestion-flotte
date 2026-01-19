@@ -499,7 +499,6 @@ if vh_srv:
     else:
         st.warning(f"⚠️ Aucun véhicule actuellement attribué au service {service_bon}")
         st.info("💡 Attribuez d'abord un véhicule à ce service dans la page 'Attribuer un véhicule'")
-        st.info("💡 Attribuez d'abord un véhicule à ce service dans la page 'Attribuer un véhicule'")
     
     st.markdown("---")
     st.subheader("📥 Saisir données bon retourné")
