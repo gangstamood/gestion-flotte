@@ -11,7 +11,7 @@ st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wid
 @st.cache_resource
 def get_connection():
     return psycopg2.connect(
-        st.secrets["database"]["url"],
+        dsn=st.secrets["database"]["url"],
         cursor_factory=RealDictCursor
     )
 
