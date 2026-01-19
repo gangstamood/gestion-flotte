@@ -479,24 +479,31 @@ with st.sidebar:
     ], label_visibility="collapsed")
     
     st.markdown("---")
-    alertes = verifier_alertes(attributions)
-    if alertes:
-        st.markdown(f"<div style='background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 1rem;'><p style='color: #ef4444; font-weight: 600; margin: 0;'>🚨 {len(alertes)} véhicule(s) à retourner bientôt</p></div>", unsafe_allow_html=True)
-        with st.expander("Voir les alertes"):
-            for a in alertes:
-                if a['jours_restants'] < 0:
-                    st.error(f"🔴 {a['immatriculation']} - {a['service']} (en retard de {-a['jours_restants']}j)")
-                elif a['jours_restants'] == 0:
-                    st.warning(f"🟠 {a['immatriculation']} - {a['service']} (retour aujourd'hui)")
-                else:
-                    st.warning(f"🟡 {a['immatriculation']} - {a['service']} (J-{a['jours_restants']})")
     
-    alertes_engins = verifier_alertes_engins(attributions_engins)
-    if alertes_engins:
-        st.markdown(f"<div style='background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 1rem; margin-top: 0.5rem;'><p style='color: #f59e0b; font-weight: 600; margin: 0;'>🚜 {len(alertes_engins)} engin(s) à retourner</p></div>", unsafe_allow_html=True)
-        with st.expander("Voir les alertes engins"):
-            for a in alertes_engins:
-                st.warning(f"{a['numero_serie']} - {a['service']} ({a['duree_heures']}h)")
+    try:
+        alertes = verifier_alertes(attributions)
+        if alertes:
+            st.markdown(f"<div style='background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 1rem;'><p style='color: #ef4444; font-weight: 600; margin: 0;'>🚨 {len(alertes)} véhicule(s) à retourner bientôt</p></div>", unsafe_allow_html=True)
+            with st.expander("Voir les alertes"):
+                for a in alertes:
+                    if a['jours_restants'] < 0:
+                        st.error(f"🔴 {a['immatriculation']} - {a['service']} (en retard de {-a['jours_restants']}j)")
+                    elif a['jours_restants'] == 0:
+                        st.warning(f"🟠 {a['immatriculation']} - {a['service']} (retour aujourd'hui)")
+                    else:
+                        st.warning(f"🟡 {a['immatriculation']} - {a['service']} (J-{a['jours_restants']})")
+    except:
+        pass
+    
+    try:
+        alertes_engins = verifier_alertes_engins(attributions_engins)
+        if alertes_engins:
+            st.markdown(f"<div style='background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 1rem; margin-top: 0.5rem;'><p style='color: #f59e0b; font-weight: 600; margin: 0;'>🚜 {len(alertes_engins)} engin(s) à retourner</p></div>", unsafe_allow_html=True)
+            with st.expander("Voir les alertes engins"):
+                for a in alertes_engins:
+                    st.warning(f"{a['numero_serie']} - {a['service']} ({a['duree_heures']}h)")
+    except:
+        pass
     
     st.markdown("---")
     st.markdown("<div style='background: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem;'><p style='color: #10b981; font-size: 0.8rem; margin: 0;'>🗄️ Base connectée</p></div>", unsafe_allow_html=True)
