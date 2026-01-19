@@ -446,10 +446,10 @@ def verifier_alertes(attributions):
             date_retour_prevue = attr.get('date_retour_prevue', '')
             if date_retour_prevue:
                 date_retour = datetime.strptime(date_retour_prevue, "%d/%m/%Y")
-                jours_restants = (date_retour - datetime.now()).days
+                jours_restants = (date_retour.date() - datetime.now().date()).days
                 if jours_restants <= 2:
                     alertes.append({'immatriculation': attr['immatriculation'], 'service': attr['service'], 'jours_restants': jours_restants, 'date_retour': date_retour_prevue})
-        except:
+        except Exception:
             continue
     return alertes
 
