@@ -472,7 +472,9 @@ with st.sidebar:
         "📊 Dashboard", "📥 Importer des véhicules", "➕ Saisir un véhicule",
         "🔧 Attribuer un véhicule", "⛽ Bons de Carburant",
         "🔨 Pannes & Interventions", 
+        "---",
         "🚜 Saisir un engin", "🔧 Attribuer un engin", "🔨 Interventions Engins",
+        "---",
         "⚙️ Paramètres"
     ], label_visibility="collapsed")
     
