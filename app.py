@@ -3,6 +3,10 @@ import pandas as pd
 from datetime import datetime, timedelta
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+import io
 
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide")
 
@@ -162,6 +166,68 @@ def update_bon_carburant(numero_bon, type_carb, volume, montant):
             bon['montant'] = str(montant)
             bon['statut'] = 'Saisi'
     write_sheet('carburant', bons)
+def generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None):
+    """Génère un PDF du bon de carburant"""
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    # Logo (si fourni)
+    if logo_url:
+        try:
+            c.drawImage(logo_url, 50, height - 100, width=100, height=80, preserveAspectRatio=True)
+        except:
+            pass
+    
+    # Titre
+    c.setFont("Helvetica-Bold", 24)
+    c.drawCentredString(width/2, height - 120, "BON DE CARBURANT")
+    
+    # Ligne de séparation
+    c.line(50, height - 140, width - 50, height - 140)
+    
+    # Informations
+    c.setFont("Helvetica-Bold", 12)
+    y = height - 180
+    
+    c.drawString(80, y, f"N° de Bon : {bon['numero_bon']}")
+    y -= 30
+    c.setFont("Helvetica-Bold", 16)
+    c.setFillColorRGB(0.8, 0.2, 0.2)
+    c.drawString(80, y, f"Carte N°{bon['numero_carte']}")
+    c.setFillColorRGB(0, 0, 0)
+    
+    y -= 40
+    c.setFont("Helvetica", 12)
+    c.drawString(80, y, f"Véhicule : {bon['immatriculation']}")
+    y -= 25
+    c.drawString(80, y, f"Service : {bon['service']}")
+    y -= 25
+    c.drawString(80, y, f"Date : {bon['date']}")
+    y -= 25
+    c.drawString(80, y, f"Conducteur : {conducteur_prenom} {conducteur_nom}")
+    
+    if bon.get('notes'):
+        y -= 25
+        c.drawString(80, y, f"Notes : {bon['notes']}")
+    
+    # Ligne de séparation
+    y -= 30
+    c.line(50, y, width - 50, y)
+    
+    # Informations à compléter
+    y -= 40
+    c.setFont("Helvetica-Italic", 11)
+    c.setFillColorRGB(0.4, 0.4, 0.4)
+    c.drawCentredString(width/2, y, "Volume, type de carburant et montant à saisir au retour")
+    
+    # Footer
+    c.setFont("Helvetica", 8)
+    c.drawCentredString(width/2, 50, "Document généré automatiquement - Gestion de Flotte")
+    
+    c.save()
+    buffer.seek(0)
+    return buffer
 
 def verifier_alertes(attributions):
     alertes = []
@@ -328,31 +394,44 @@ elif page == "⛽ Bons de Carburant":
     st.title("⛽ Bons de Carburant")
     st.subheader("📝 Générer un Bon")
     
-    with st.form("form_bon"):
+with st.form("form_bon"):
         col1, col2 = st.columns(2)
-        service_bon = col1.selectbox("Service *", services)
         
-        vh_srv = []
-        for attr in attributions:
-            if attr.get('service') == service_bon and not attr.get('retourne'):
-                for v in vehicules:
-                    if v['immatriculation'] == attr['immatriculation']:
-                        vh_srv.append(f"{v['immatriculation']} - {v['type']} {v['marque']}")
-                        break
+        with col1:
+            service_bon = st.selectbox("Service *", services, key="service_bon_form")
         
-        if vh_srv:
-            vh_sel = col2.selectbox("Véhicule *", vh_srv)
-        else:
-            col2.warning(f"Aucun véhicule affecté à {service_bon}")
-            vh_sel = None
+        with col2:
+            vh_srv = []
+            for attr in attributions:
+                if attr.get('service') == service_bon and not attr.get('retourne'):
+                    for v in vehicules:
+                        if v['immatriculation'] == attr['immatriculation']:
+                            vh_srv.append(f"{v['immatriculation']} - {v['type']} {v['marque']}")
+                            break
+            
+            if vh_srv:
+                vh_sel = st.selectbox("Véhicule *", vh_srv)
+            else:
+                st.warning(f"Aucun véhicule affecté à {service_bon}")
+                vh_sel = None
         
         col3, col4 = st.columns(2)
-        date_bon = col3.date_input("Date *", value=datetime.now())
-        num_carte = col4.text_input("N° Carte *", placeholder="1, 2, A...")
+        with col3:
+            date_bon = st.date_input("Date *", value=datetime.now())
+        with col4:
+            num_carte = st.text_input("N° Carte *", placeholder="1, 2, A...")
+        
+        col5, col6 = st.columns(2)
+        with col5:
+            conducteur_prenom = st.text_input("Prénom conducteur *", placeholder="Jean")
+        with col6:
+            conducteur_nom = st.text_input("Nom conducteur *", placeholder="Dupont")
+        
+        logo_url = st.text_input("URL du logo (optionnel)", placeholder="https://exemple.com/logo.png")
         notes = st.text_area("Notes", height=80)
         
-        if st.form_submit_button("✅ Générer"):
-            if vh_sel and num_carte:
+        if st.form_submit_button("✅ Générer le bon"):
+            if vh_sel and num_carte and conducteur_nom and conducteur_prenom:
                 immat = vh_sel.split(" - ")[0]
                 num_bon = f"BC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
                 
@@ -362,6 +441,8 @@ elif page == "⛽ Bons de Carburant":
                     "service": service_bon,
                     "date": date_bon.strftime("%d/%m/%Y"),
                     "numero_carte": num_carte,
+                    "conducteur_nom": conducteur_nom,
+                    "conducteur_prenom": conducteur_prenom,
                     "type_carburant": "",
                     "volume": 0.0,
                     "montant": 0.0,
@@ -373,6 +454,7 @@ elif page == "⛽ Bons de Carburant":
                 st.success(f"✅ Bon {num_bon} généré !")
                 st.markdown("---")
                 
+                # Affichage HTML du bon
                 bon_html = f"""
                 <div style="border: 2px solid #333; padding: 30px; border-radius: 10px; background: #fff; max-width: 600px; margin: auto;">
                     <h2 style="text-align: center;">BON DE CARBURANT</h2>
@@ -382,15 +464,27 @@ elif page == "⛽ Bons de Carburant":
                     <p><strong>Véhicule :</strong> {immat}</p>
                     <p><strong>Service :</strong> {service_bon}</p>
                     <p><strong>Date :</strong> {date_bon.strftime("%d/%m/%Y")}</p>
+                    <p><strong>Conducteur :</strong> {conducteur_prenom} {conducteur_nom}</p>
                     {f'<p><strong>Notes :</strong> {notes}</p>' if notes else ''}
                     <hr>
                     <p style="text-align: center; font-style: italic; color: #666;">Volume, type et montant à saisir au retour</p>
                 </div>
                 """
                 st.markdown(bon_html, unsafe_allow_html=True)
-                st.info("💡 Ctrl+P pour imprimer")
+                
+                # Bouton de téléchargement PDF
+                pdf_buffer = generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url if logo_url else None)
+                st.download_button(
+                    label="📥 Télécharger le bon en PDF",
+                    data=pdf_buffer,
+                    file_name=f"bon_carburant_{num_bon}.pdf",
+                    mime="application/pdf",
+                    type="primary"
+                )
+                
+                st.info("💡 Vous pouvez aussi imprimer avec Ctrl+P (Cmd+P)")
             else:
-                st.error("❌ Champs requis")
+                st.error("❌ Veuillez remplir tous les champs obligatoires")
     
     st.markdown("---")
     st.subheader("📥 Saisir données bon retourné")
