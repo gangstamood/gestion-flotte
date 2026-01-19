@@ -16,7 +16,7 @@ def get_sheets_service():
     return build('sheets', 'v4', credentials=credentials)
 
 SPREADSHEET_ID = st.secrets["google_sheets"]["spreadsheet_id"]
-service = get_sheets_service()
+sheets_service = get_sheets_service()
 
 def read_sheet(sheet_name):
     """Lit une feuille Google Sheets et retourne une liste de dictionnaires"""
