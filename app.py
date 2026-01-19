@@ -24,6 +24,7 @@ st.markdown("""
     
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    [data-testid="stToolbar"] {visibility: hidden;}
     
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
