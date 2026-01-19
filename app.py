@@ -394,95 +394,93 @@ elif page == "⛽ Bons de Carburant":
     st.title("⛽ Gestion des Bons de Carburant")
     st.subheader("📝 Générer un Bon de Carburant")
     
-    with st.form("form_bon"):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            service_bon = st.selectbox("Service *", services, key="service_bon_form")
-        
-        with col2:
-            vh_srv = []
-            for attr in attributions:
-                if attr.get('service') == service_bon and not attr.get('retourne'):
-                    for v in vehicules:
-                        if v['immatriculation'] == attr['immatriculation']:
-                            vh_srv.append(f"{v['immatriculation']} - {v['type']} {v['marque']}")
-                            break
+    # Sélection du service AVANT le formulaire pour actualisation dynamique
+    service_bon = st.selectbox("Service *", services, key="service_bon_select")
+    
+    # Filtrer les véhicules du service sélectionné
+    vh_srv = []
+    for attr in attributions:
+        if attr.get('service') == service_bon and not attr.get('retourne'):
+            for v in vehicules:
+                if v['immatriculation'] == attr['immatriculation']:
+                    vh_srv.append(f"{v['immatriculation']} - {v['type']} {v['marque']}")
+                    break
+    
+    if vh_srv:
+        with st.form("form_bon"):
+            vh_sel = st.selectbox("Véhicule *", vh_srv)
             
-            if vh_srv:
-                vh_sel = st.selectbox("Véhicule *", vh_srv)
-            else:
-                st.warning(f"Aucun véhicule affecté à {service_bon}")
-                vh_sel = None
-        
-        col3, col4 = st.columns(2)
-        with col3:
-            date_bon = st.date_input("Date *", value=datetime.now())
-        with col4:
-            num_carte = st.text_input("N° Carte *", placeholder="1, 2, A...")
-        
-        col5, col6 = st.columns(2)
-        with col5:
-            conducteur_prenom = st.text_input("Prénom conducteur *", placeholder="Jean")
-        with col6:
-            conducteur_nom = st.text_input("Nom conducteur *", placeholder="Dupont")
-        
-        logo_url = st.text_input("URL du logo (optionnel)", placeholder="https://exemple.com/logo.png")
-        notes = st.text_area("Notes", height=80)
-        
-        if st.form_submit_button("✅ Générer le bon"):
-            if vh_sel and num_carte and conducteur_nom and conducteur_prenom:
-                immat = vh_sel.split(" - ")[0]
-                num_bon = f"BC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-                
-                bon = {
-                    "numero_bon": num_bon,
-                    "immatriculation": immat,
-                    "service": service_bon,
-                    "date": date_bon.strftime("%d/%m/%Y"),
-                    "numero_carte": num_carte,
-                    "conducteur_nom": conducteur_nom,
-                    "conducteur_prenom": conducteur_prenom,
-                    "type_carburant": "",
-                    "volume": 0.0,
-                    "montant": 0.0,
-                    "notes": notes,
-                    "statut": "Non saisi"
-                }
-                add_bon_carburant(bon)
-                
-                st.success(f"✅ Bon {num_bon} généré !")
-                st.markdown("---")
-                
-                bon_html = f"""
-                <div style="border: 2px solid #333; padding: 30px; border-radius: 10px; background: #fff; max-width: 600px; margin: auto;">
-                    <h2 style="text-align: center;">BON DE CARBURANT</h2>
-                    <hr>
-                    <p><strong>N° :</strong> {num_bon}</p>
-                    <p style="font-size: 18px; color: #d9534f;"><strong>Carte N°{num_carte}</strong></p>
-                    <p><strong>Véhicule :</strong> {immat}</p>
-                    <p><strong>Service :</strong> {service_bon}</p>
-                    <p><strong>Date :</strong> {date_bon.strftime("%d/%m/%Y")}</p>
-                    <p><strong>Conducteur :</strong> {conducteur_prenom} {conducteur_nom}</p>
-                    {f'<p><strong>Notes :</strong> {notes}</p>' if notes else ''}
-                    <hr>
-                    <p style="text-align: center; font-style: italic; color: #666;">Volume, type et montant à saisir au retour</p>
-                </div>
-                """
-                st.markdown(bon_html, unsafe_allow_html=True)
-                
-                pdf_buffer = generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url if logo_url else None)
-                st.download_button(
-                    label="📥 Télécharger le bon en PDF",
-                    data=pdf_buffer,
-                    file_name=f"bon_carburant_{num_bon}.pdf",
-                    mime="application/pdf",
-                    type="primary"
-                )
-                
-                st.info("💡 Vous pouvez aussi imprimer avec Ctrl+P (Cmd+P)")
-            else:
-                st.error("❌ Veuillez remplir tous les champs obligatoires")
+            col3, col4 = st.columns(2)
+            with col3:
+                date_bon = st.date_input("Date *", value=datetime.now())
+            with col4:
+                num_carte = st.text_input("N° Carte *", placeholder="1, 2, A...")
+            
+            col5, col6 = st.columns(2)
+            with col5:
+                conducteur_prenom = st.text_input("Prénom conducteur *", placeholder="Jean")
+            with col6:
+                conducteur_nom = st.text_input("Nom conducteur *", placeholder="Dupont")
+            
+            logo_url = st.text_input("URL du logo (optionnel)", placeholder="https://exemple.com/logo.png")
+            notes = st.text_area("Notes", height=80)
+            
+            if st.form_submit_button("✅ Générer le bon"):
+                if conducteur_nom and conducteur_prenom and num_carte:
+                    immat = vh_sel.split(" - ")[0]
+                    num_bon = f"BC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                    
+                    bon = {
+                        "numero_bon": num_bon,
+                        "immatriculation": immat,
+                        "service": service_bon,
+                        "date": date_bon.strftime("%d/%m/%Y"),
+                        "numero_carte": num_carte,
+                        "conducteur_nom": conducteur_nom,
+                        "conducteur_prenom": conducteur_prenom,
+                        "type_carburant": "",
+                        "volume": 0.0,
+                        "montant": 0.0,
+                        "notes": notes,
+                        "statut": "Non saisi"
+                    }
+                    add_bon_carburant(bon)
+                    
+                    st.success(f"✅ Bon {num_bon} généré !")
+                    st.markdown("---")
+                    
+                    bon_html = f"""
+                    <div style="border: 2px solid #333; padding: 30px; border-radius: 10px; background: #fff; max-width: 600px; margin: auto;">
+                        <h2 style="text-align: center;">BON DE CARBURANT</h2>
+                        <hr>
+                        <p><strong>N° :</strong> {num_bon}</p>
+                        <p style="font-size: 18px; color: #d9534f;"><strong>Carte N°{num_carte}</strong></p>
+                        <p><strong>Véhicule :</strong> {immat}</p>
+                        <p><strong>Service :</strong> {service_bon}</p>
+                        <p><strong>Date :</strong> {date_bon.strftime("%d/%m/%Y")}</p>
+                        <p><strong>Conducteur :</strong> {conducteur_prenom} {conducteur_nom}</p>
+                        {f'<p><strong>Notes :</strong> {notes}</p>' if notes else ''}
+                        <hr>
+                        <p style="text-align: center; font-style: italic; color: #666;">Volume, type et montant à saisir au retour</p>
+                    </div>
+                    """
+                    st.markdown(bon_html, unsafe_allow_html=True)
+                    
+                    pdf_buffer = generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url if logo_url else None)
+                    st.download_button(
+                        label="📥 Télécharger le bon en PDF",
+                        data=pdf_buffer,
+                        file_name=f"bon_carburant_{num_bon}.pdf",
+                        mime="application/pdf",
+                        type="primary"
+                    )
+                    
+                    st.info("💡 Vous pouvez aussi imprimer avec Ctrl+P (Cmd+P)")
+                else:
+                    st.error("❌ Veuillez remplir tous les champs obligatoires")
+    else:
+        st.warning(f"⚠️ Aucun véhicule actuellement attribué au service {service_bon}")
+        st.info("💡 Attribuez d'abord un véhicule à ce service dans la page 'Attribuer un véhicule'")
     
     st.markdown("---")
     st.subheader("📥 Saisir données bon retourné")
