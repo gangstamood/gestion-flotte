@@ -453,12 +453,7 @@ if vh_srv:
                         'logo_url': logo_url
                     }
                     
-                    st.success(f"✅ Bon {num_bon} généré !")
-                    st.rerun()
-                else:
-                    st.error("❌ Veuillez remplir tous les champs obligatoires")
-        
-        if 'dernier_bon' in st.session_state:
+if 'dernier_bon' in st.session_state:
             st.markdown("---")
             bon = st.session_state.dernier_bon['bon']
             conducteur_nom = st.session_state.dernier_bon['conducteur_nom']
