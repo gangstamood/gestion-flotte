@@ -76,6 +76,11 @@ def add_vehicule(immat, type_v, marque):
         vehicules.append({'immatriculation': immat, 'type': type_v, 'marque': marque})
         write_sheet('vehicules', vehicules)
 
+def delete_vehicule(immat):
+    vehicules = get_vehicules()
+    vehicules = [v for v in vehicules if v.get('immatriculation') != immat]
+    write_sheet('vehicules', vehicules)
+    
 def get_attributions():
     return read_sheet('attributions')
 
@@ -280,9 +285,18 @@ elif page == "➕ Saisir un véhicule":
                 st.error("❌ Champs requis")
     
     st.markdown("---")
-    st.subheader("📋 Liste")
+    st.subheader("📋 Liste des véhicules")
     if vehicules:
-        st.dataframe(pd.DataFrame(vehicules), use_container_width=True, hide_index=True)
+        for vh in vehicules:
+            col1, col2 = st.columns([5, 1])
+            with col1:
+                st.text(f"{vh['immatriculation']} - {vh['type']} {vh['marque']}")
+            with col2:
+                if st.button("🗑️", key=f"del_vh_{vh['immatriculation']}"):
+                    delete_vehicule(vh['immatriculation'])
+                    st.success(f"✅ {vh['immatriculation']} supprimé !")
+                    st.rerun()
+
 
 elif page == "🔧 Attribuer un véhicule":
     st.title("🔧 Attribution")
