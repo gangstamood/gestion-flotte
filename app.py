@@ -199,7 +199,7 @@ def generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None):
     
     y -= 40
     c.setFont("Helvetica", 12)
-    c.drawString(80, y, f"Véhicule : {bon['immatriculation']}")
+    c.drawString(80, y, f"Vehicule : {bon['immatriculation']}")
     y -= 25
     c.drawString(80, y, f"Service : {bon['service']}")
     y -= 25
@@ -217,13 +217,13 @@ def generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None):
     
     # Informations à compléter
     y -= 40
-    c.setFont("Helvetica-Italic", 11)
+    c.setFont("Helvetica-Oblique", 11)
     c.setFillColorRGB(0.4, 0.4, 0.4)
-    c.drawCentredString(width/2, y, "Volume, type de carburant et montant à saisir au retour")
+    c.drawCentredString(width/2, y, "Volume, type de carburant et montant a saisir au retour")
     
     # Footer
     c.setFont("Helvetica", 8)
-    c.drawCentredString(width/2, 50, "Document généré automatiquement - Gestion de Flotte")
+    c.drawCentredString(width/2, 50, "Document genere automatiquement - Gestion de Flotte")
     
     c.save()
     buffer.seek(0)
