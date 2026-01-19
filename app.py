@@ -256,9 +256,9 @@ def delete_vehicule(immat):
 def get_attributions():
     return read_sheet('attributions')
 
-def add_attribution(immat, service, date, heure, date_retour_prevue):
+def add_attribution(immat, service, date, heure):
     attributions = get_attributions()
-    attributions.append({'immatriculation': immat, 'service': service, 'date': date, 'heure': heure, 'date_retour_prevue': date_retour_prevue, 'retourne': ''})
+    attributions.append({'immatriculation': immat, 'service': service, 'date': date, 'heure': heure, 'retourne': ''})
     write_sheet('attributions', attributions)
 
 def retourner_vehicule(immat):
@@ -443,13 +443,11 @@ def verifier_alertes(attributions):
         if attr.get('retourne'):
             continue
         try:
-            date_retour_prevue = attr.get('date_retour_prevue', '')
-            if date_retour_prevue:
-                date_retour = datetime.strptime(date_retour_prevue, "%d/%m/%Y")
-                jours_restants = (date_retour.date() - datetime.now().date()).days
-                if jours_restants <= 2:
-                    alertes.append({'immatriculation': attr['immatriculation'], 'service': attr['service'], 'jours_restants': jours_restants, 'date_retour': date_retour_prevue})
-        except Exception:
+            date_attrib = datetime.strptime(f"{attr['date']} {attr['heure']}", "%d/%m/%Y %H:%M")
+            duree = datetime.now() - date_attrib
+            if duree > timedelta(hours=8):
+                alertes.append({'immatriculation': attr['immatriculation'], 'service': attr['service'], 'duree_heures': int(duree.total_seconds() / 3600)})
+        except:
             continue
     return alertes
 
@@ -481,15 +479,10 @@ with st.sidebar:
     st.markdown("---")
     alertes = verifier_alertes(attributions)
     if alertes:
-        st.markdown(f"<div style='background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 1rem;'><p style='color: #ef4444; font-weight: 600; margin: 0;'>🚨 {len(alertes)} véhicule(s) à retourner bientôt</p></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 1rem;'><p style='color: #ef4444; font-weight: 600; margin: 0;'>🚨 {len(alertes)} véhicule(s) à retourner</p></div>", unsafe_allow_html=True)
         with st.expander("Voir les alertes"):
             for a in alertes:
-                if a['jours_restants'] < 0:
-                    st.error(f"🔴 {a['immatriculation']} - {a['service']} (en retard de {-a['jours_restants']}j)")
-                elif a['jours_restants'] == 0:
-                    st.warning(f"🟠 {a['immatriculation']} - {a['service']} (retour aujourd'hui)")
-                else:
-                    st.warning(f"🟡 {a['immatriculation']} - {a['service']} (J-{a['jours_restants']})")
+                st.warning(f"{a['immatriculation']} - {a['service']} ({a['duree_heures']}h)")
     
     alertes_engins = verifier_alertes_engins(attributions_engins)
     if alertes_engins:
@@ -521,44 +514,24 @@ if page == "📊 Dashboard":
     
     st.markdown("---")
     st.markdown("### 📋 Sorties du Jour")
-    
-    with st.expander("🚗 Véhicules", expanded=False):
-        if attributions:
-            df = pd.DataFrame(attributions)
-            df['type'] = df['immatriculation'].apply(lambda x: next((v['type'] for v in vehicules if v['immatriculation'] == x), ""))
-            df['marque'] = df['immatriculation'].apply(lambda x: next((v['marque'] for v in vehicules if v['immatriculation'] == x), ""))
-            if filtre_type != "Tous":
-                df = df[df['type'] == filtre_type]
-            if filtre_service != "Tous":
-                df = df[df['service'] == filtre_service]
-            if len(df) > 0:
-                for srv in (services if filtre_service == "Tous" else [filtre_service]):
-                    df_srv = df[df['service'] == srv]
-                    if len(df_srv) > 0:
-                        st.markdown(f"#### 🔹 {srv}")
-                        st.dataframe(df_srv[['immatriculation', 'type', 'marque', 'date', 'heure']], use_container_width=True, hide_index=True)
-            else:
-                st.warning("⚠️ Aucune attribution")
+    if attributions:
+        df = pd.DataFrame(attributions)
+        df['type'] = df['immatriculation'].apply(lambda x: next((v['type'] for v in vehicules if v['immatriculation'] == x), ""))
+        df['marque'] = df['immatriculation'].apply(lambda x: next((v['marque'] for v in vehicules if v['immatriculation'] == x), ""))
+        if filtre_type != "Tous":
+            df = df[df['type'] == filtre_type]
+        if filtre_service != "Tous":
+            df = df[df['service'] == filtre_service]
+        if len(df) > 0:
+            for srv in (services if filtre_service == "Tous" else [filtre_service]):
+                df_srv = df[df['service'] == srv]
+                if len(df_srv) > 0:
+                    st.markdown(f"#### 🔹 {srv}")
+                    st.dataframe(df_srv[['immatriculation', 'type', 'marque', 'date', 'heure']], use_container_width=True, hide_index=True)
         else:
             st.warning("⚠️ Aucune attribution")
-    
-    with st.expander("🚜 Engins", expanded=False):
-        if attributions_engins:
-            df_eng = pd.DataFrame(attributions_engins)
-            df_eng['type'] = df_eng['numero_serie'].apply(lambda x: next((e['type'] for e in engins if e['numero_serie'] == x), ""))
-            df_eng['marque'] = df_eng['numero_serie'].apply(lambda x: next((e['marque'] for e in engins if e['numero_serie'] == x), ""))
-            if filtre_service != "Tous":
-                df_eng = df_eng[df_eng['service'] == filtre_service]
-            if len(df_eng) > 0:
-                for srv in (services if filtre_service == "Tous" else [filtre_service]):
-                    df_srv = df_eng[df_eng['service'] == srv]
-                    if len(df_srv) > 0:
-                        st.markdown(f"#### 🔹 {srv}")
-                        st.dataframe(df_srv[['numero_serie', 'type', 'marque', 'date', 'heure']], use_container_width=True, hide_index=True)
-            else:
-                st.warning("⚠️ Aucune attribution")
-        else:
-            st.warning("⚠️ Aucune attribution")
+    else:
+        st.warning("⚠️ Aucune attribution")
     
     st.markdown("---")
     st.markdown("### 🔙 Retourner un Véhicule")
@@ -627,11 +600,10 @@ elif page == "🔧 Attribuer un véhicule":
             immat_sel = col1.selectbox("Véhicule *", [f"{v['immatriculation']} - {v['type']} {v['marque']}" for v in vehicules])
             service = col2.selectbox("Service *", services)
             col3, col4 = st.columns(2)
-            date_s = col3.date_input("Date sortie", value=datetime.now())
-            heure_s = col4.time_input("Heure sortie", value=datetime.now().time())
-            date_retour = st.date_input("Date de retour prévue *", value=datetime.now() + timedelta(days=1))
+            date_s = col3.date_input("Date", value=datetime.now())
+            heure_s = col4.time_input("Heure", value=datetime.now().time())
             if st.form_submit_button("✅ Confirmer", type="primary"):
-                add_attribution(immat_sel.split(" - ")[0], service, date_s.strftime("%d/%m/%Y"), heure_s.strftime("%H:%M"), date_retour.strftime("%d/%m/%Y"))
+                add_attribution(immat_sel.split(" - ")[0], service, date_s.strftime("%d/%m/%Y"), heure_s.strftime("%H:%M"))
                 st.success(f"✅ Attribué !")
                 st.rerun()
     else:
