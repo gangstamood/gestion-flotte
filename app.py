@@ -514,24 +514,44 @@ if page == "📊 Dashboard":
     
     st.markdown("---")
     st.markdown("### 📋 Sorties du Jour")
-    if attributions:
-        df = pd.DataFrame(attributions)
-        df['type'] = df['immatriculation'].apply(lambda x: next((v['type'] for v in vehicules if v['immatriculation'] == x), ""))
-        df['marque'] = df['immatriculation'].apply(lambda x: next((v['marque'] for v in vehicules if v['immatriculation'] == x), ""))
-        if filtre_type != "Tous":
-            df = df[df['type'] == filtre_type]
-        if filtre_service != "Tous":
-            df = df[df['service'] == filtre_service]
-        if len(df) > 0:
-            for srv in (services if filtre_service == "Tous" else [filtre_service]):
-                df_srv = df[df['service'] == srv]
-                if len(df_srv) > 0:
-                    st.markdown(f"#### 🔹 {srv}")
-                    st.dataframe(df_srv[['immatriculation', 'type', 'marque', 'date', 'heure']], use_container_width=True, hide_index=True)
+    
+    with st.expander("🚗 Véhicules", expanded=False):
+        if attributions:
+            df = pd.DataFrame(attributions)
+            df['type'] = df['immatriculation'].apply(lambda x: next((v['type'] for v in vehicules if v['immatriculation'] == x), ""))
+            df['marque'] = df['immatriculation'].apply(lambda x: next((v['marque'] for v in vehicules if v['immatriculation'] == x), ""))
+            if filtre_type != "Tous":
+                df = df[df['type'] == filtre_type]
+            if filtre_service != "Tous":
+                df = df[df['service'] == filtre_service]
+            if len(df) > 0:
+                for srv in (services if filtre_service == "Tous" else [filtre_service]):
+                    df_srv = df[df['service'] == srv]
+                    if len(df_srv) > 0:
+                        st.markdown(f"#### 🔹 {srv}")
+                        st.dataframe(df_srv[['immatriculation', 'type', 'marque', 'date', 'heure']], use_container_width=True, hide_index=True)
+            else:
+                st.warning("⚠️ Aucune attribution")
         else:
             st.warning("⚠️ Aucune attribution")
-    else:
-        st.warning("⚠️ Aucune attribution")
+    
+    with st.expander("🚜 Engins", expanded=False):
+        if attributions_engins:
+            df_eng = pd.DataFrame(attributions_engins)
+            df_eng['type'] = df_eng['numero_serie'].apply(lambda x: next((e['type'] for e in engins if e['numero_serie'] == x), ""))
+            df_eng['marque'] = df_eng['numero_serie'].apply(lambda x: next((e['marque'] for e in engins if e['numero_serie'] == x), ""))
+            if filtre_service != "Tous":
+                df_eng = df_eng[df_eng['service'] == filtre_service]
+            if len(df_eng) > 0:
+                for srv in (services if filtre_service == "Tous" else [filtre_service]):
+                    df_srv = df_eng[df_eng['service'] == srv]
+                    if len(df_srv) > 0:
+                        st.markdown(f"#### 🔹 {srv}")
+                        st.dataframe(df_srv[['numero_serie', 'type', 'marque', 'date', 'heure']], use_container_width=True, hide_index=True)
+            else:
+                st.warning("⚠️ Aucune attribution")
+        else:
+            st.warning("⚠️ Aucune attribution")
     
     st.markdown("---")
     st.markdown("### 🔙 Retourner un Véhicule")
