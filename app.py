@@ -519,6 +519,76 @@ def add_intervention_engin(num_serie, type_i, date, heure, comm, statut):
     interventions.append({'numero_serie': num_serie, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut})
     write_sheet('interventions_engins', interventions)
 
+# FONCTIONS CRUD SCOOTERS
+def get_scooters():
+    return read_sheet('scooters')
+
+def add_scooter(immat, type_s, marque):
+    scooters = get_scooters()
+    if not any(s.get('immatriculation') == immat for s in scooters):
+        scooters.append({'immatriculation': immat, 'type': type_s, 'marque': marque})
+        write_sheet('scooters', scooters)
+
+def delete_scooter(immat):
+    scooters = [s for s in get_scooters() if s.get('immatriculation') != immat]
+    write_sheet('scooters', scooters)
+
+def get_attributions_scooters():
+    return read_sheet('attributions_scooters')
+
+def add_attribution_scooter(immat, service, date, heure, date_retour_prevue):
+    attributions = get_attributions_scooters()
+    attributions.append({'immatriculation': immat, 'service': service, 'date': date, 'heure': heure, 'date_retour_prevue': date_retour_prevue, 'retourne': ''})
+    write_sheet('attributions_scooters', attributions)
+
+def retourner_scooter(immat):
+    attributions = get_attributions_scooters()
+    for attr in reversed(attributions):
+        if attr.get('immatriculation') == immat and not attr.get('retourne'):
+            attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+            break
+    write_sheet('attributions_scooters', attributions)
+
+def get_categories_scooters():
+    cats = read_sheet('categories_scooters')
+    if not cats:
+        defaults = [{'nom': c} for c in ["50cc", "125cc", "Électrique", "Autre"]]
+        write_sheet('categories_scooters', defaults)
+        return ["50cc", "125cc", "Électrique", "Autre"]
+    return [c.get('nom', '') for c in cats if c.get('nom')]
+
+def add_category_scooter(nom):
+    cats = get_categories_scooters()
+    if nom not in cats:
+        write_sheet('categories_scooters', [{'nom': c} for c in cats + [nom]])
+
+def delete_category_scooter(nom):
+    write_sheet('categories_scooters', [{'nom': c} for c in get_categories_scooters() if c != nom])
+
+def get_interventions_scooters():
+    return read_sheet('interventions_scooters')
+
+def add_intervention_scooter(immat, type_i, date, heure, comm, statut):
+    interventions = get_interventions_scooters()
+    interventions.append({'immatriculation': immat, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut})
+    write_sheet('interventions_scooters', interventions)
+
+def verifier_alertes_scooters(attributions):
+    alertes = []
+    for attr in attributions:
+        if attr.get('retourne'):
+            continue
+        try:
+            date_retour_prevue = attr.get('date_retour_prevue', '')
+            if date_retour_prevue:
+                date_retour = datetime.strptime(date_retour_prevue, "%d/%m/%Y")
+                jours_restants = (date_retour.date() - datetime.now().date()).days
+                if jours_restants <= 2:
+                    alertes.append({'immatriculation': attr['immatriculation'], 'service': attr['service'], 'jours_restants': jours_restants, 'date_retour': date_retour_prevue})
+        except Exception:
+            continue
+    return alertes
+
 def verifier_alertes_engins(attributions):
     alertes = []
     for attr in attributions:
@@ -604,6 +674,10 @@ engins = get_engins()
 attributions_engins = get_attributions_engins()
 categories_engins = get_categories_engins()
 interventions_engins = get_interventions_engins()
+scooters = get_scooters()
+attributions_scooters = get_attributions_scooters()
+categories_scooters = get_categories_scooters()
+interventions_scooters = get_interventions_scooters()
 
 # SIDEBAR
 with st.sidebar:
@@ -614,6 +688,7 @@ with st.sidebar:
         "📊 Dashboard", "📥 Importer des véhicules", "➕ Saisir un véhicule",
         "🔧 Attribuer un véhicule", "⛽ Bons de Carburant",
         "🔨 Pannes & Interventions", 
+        "🛵 Saisir un scooter", "🔧 Attribuer un scooter", "🔨 Interventions Scooters",
         "🚜 Saisir un engin", "🔧 Attribuer un engin", "🔨 Interventions Engins",
         "⚙️ Paramètres"
     ], label_visibility="collapsed")
@@ -637,7 +712,19 @@ with st.sidebar:
         with st.expander("Voir les alertes engins"):
             for a in alertes_engins:
                 st.warning(f"{a['numero_serie']} - {a['service']} ({a['duree_heures']}h)")
-    
+
+    alertes_scooters = verifier_alertes_scooters(attributions_scooters)
+    if alertes_scooters:
+        st.markdown(f"<div style='background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 1rem; margin-top: 0.5rem;'><p style='color: #a855f7; font-weight: 600; margin: 0;'>🛵 {len(alertes_scooters)} scooter(s) à retourner bientôt</p></div>", unsafe_allow_html=True)
+        with st.expander("Voir les alertes scooters"):
+            for a in alertes_scooters:
+                if a['jours_restants'] < 0:
+                    st.error(f"🔴 {a['immatriculation']} - {a['service']} (en retard de {-a['jours_restants']}j)")
+                elif a['jours_restants'] == 0:
+                    st.warning(f"🟠 {a['immatriculation']} - {a['service']} (retour aujourd'hui)")
+                else:
+                    st.warning(f"🟡 {a['immatriculation']} - {a['service']} (J-{a['jours_restants']})")
+
     st.markdown("---")
     st.markdown("<div style='background: rgba(16, 185, 129, 0.08); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem;'><p style='color: #10b981; font-size: 0.8rem; margin: 0;'>🗄️ Base connectée</p></div>", unsafe_allow_html=True)
 
@@ -650,12 +737,14 @@ if page == "📊 Dashboard":
     nb_vehicules = len(vehicules)
     sorties_en_cours = [a for a in attributions if not a.get('retourne')]
     nb_en_sortie = len(sorties_en_cours)
+    nb_scooters = len(scooters)
     nb_engins = len(engins)
     interventions_en_cours_v = [i for i in interventions if i.get('statut') == "En cours"]
     interventions_en_cours_e = [i for i in interventions_engins if i.get('statut') == "En cours"]
-    nb_interventions = len(interventions_en_cours_v) + len(interventions_en_cours_e)
+    interventions_en_cours_s = [i for i in interventions_scooters if i.get('statut') == "En cours"]
+    nb_interventions = len(interventions_en_cours_v) + len(interventions_en_cours_e) + len(interventions_en_cours_s)
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.metric("🚙 Véhicules", nb_vehicules)
         if st.button("📋 Détails", key="btn_vehicules", use_container_width=True):
@@ -665,10 +754,14 @@ if page == "📊 Dashboard":
         if st.button("📋 Détails", key="btn_en_sortie", use_container_width=True):
             st.session_state['dashboard_detail'] = 'en_sortie' if st.session_state.get('dashboard_detail') != 'en_sortie' else None
     with col3:
+        st.metric("🛵 Scooters", nb_scooters)
+        if st.button("📋 Détails", key="btn_scooters", use_container_width=True):
+            st.session_state['dashboard_detail'] = 'scooters' if st.session_state.get('dashboard_detail') != 'scooters' else None
+    with col4:
         st.metric("🚜 Engins", nb_engins)
         if st.button("📋 Détails", key="btn_engins", use_container_width=True):
             st.session_state['dashboard_detail'] = 'engins' if st.session_state.get('dashboard_detail') != 'engins' else None
-    with col4:
+    with col5:
         st.metric("🔨 Interventions", nb_interventions)
         if st.button("📋 Détails", key="btn_interventions", use_container_width=True):
             st.session_state['dashboard_detail'] = 'interventions' if st.session_state.get('dashboard_detail') != 'interventions' else None
@@ -744,6 +837,31 @@ if page == "📊 Dashboard":
         else:
             st.info("Aucun engin enregistré")
 
+    elif detail == 'scooters':
+        st.markdown("---")
+        st.markdown("### 🛵 Détail des Scooters")
+        if scooters:
+            for s in scooters:
+                immat = s.get('immatriculation', '')
+                en_sortie = any(a.get('immatriculation') == immat and not a.get('retourne') for a in attributions_scooters)
+                en_interv = any(i.get('immatriculation') == immat and i.get('statut') == "En cours" for i in interventions_scooters)
+                if en_interv:
+                    statut = "🔧 En intervention"
+                    couleur = "#f59e0b"
+                elif en_sortie:
+                    statut = "🔑 Distribué"
+                    couleur = "#ef4444"
+                else:
+                    statut = "✅ Disponible"
+                    couleur = "#10b981"
+                st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
+                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{immat}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{s.get('marque','')} — {s.get('type','')}</span>
+                    <br/><span style='color:{couleur};font-weight:500;font-size:0.9rem;'>{statut}</span>
+                </div>""", unsafe_allow_html=True)
+        else:
+            st.info("Aucun scooter enregistré")
+
     elif detail == 'interventions':
         st.markdown("---")
         st.markdown("### 🔨 Interventions en cours")
@@ -758,6 +876,17 @@ if page == "📊 Dashboard":
                     <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
                     <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
                 </div>""", unsafe_allow_html=True)
+        if interventions_en_cours_s:
+            st.markdown("#### 🛵 Scooters")
+            for i in interventions_en_cours_s:
+                immat = i.get('immatriculation', '')
+                info_s = next((s for s in scooters if s.get('immatriculation') == immat), {})
+                st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
+                    <span style='color:{t['h1_color']};font-weight:600;'>{immat}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{info_s.get('marque','')} — {info_s.get('type','')}</span><br/>
+                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
+                </div>""", unsafe_allow_html=True)
         if interventions_en_cours_e:
             st.markdown("#### 🚜 Engins")
             for i in interventions_en_cours_e:
@@ -769,7 +898,7 @@ if page == "📊 Dashboard":
                     <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
                     <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
                 </div>""", unsafe_allow_html=True)
-        if not interventions_en_cours_v and not interventions_en_cours_e:
+        if not interventions_en_cours_v and not interventions_en_cours_e and not interventions_en_cours_s:
             st.info("Aucune intervention en cours")
 
     st.markdown("---")
@@ -804,6 +933,25 @@ if page == "📊 Dashboard":
         else:
             st.warning("⚠️ Aucune attribution")
     
+    with st.expander("🛵 Scooters", expanded=False):
+        sorties_jour_sco = [a for a in attributions_scooters if a.get('date') == aujourd_hui and not a.get('retourne')]
+        if sorties_jour_sco:
+            df_sco = pd.DataFrame(sorties_jour_sco)
+            df_sco['type'] = df_sco['immatriculation'].apply(lambda x: next((s['type'] for s in scooters if s['immatriculation'] == x), ""))
+            df_sco['marque'] = df_sco['immatriculation'].apply(lambda x: next((s['marque'] for s in scooters if s['immatriculation'] == x), ""))
+            if filtre_service != "Tous":
+                df_sco = df_sco[df_sco['service'] == filtre_service]
+            if len(df_sco) > 0:
+                for srv in (services if filtre_service == "Tous" else [filtre_service]):
+                    df_srv = df_sco[df_sco['service'] == srv]
+                    if len(df_srv) > 0:
+                        st.markdown(f"#### 🔹 {srv}")
+                        st.dataframe(df_srv[['immatriculation', 'type', 'marque', 'date', 'heure']], use_container_width=True, hide_index=True)
+            else:
+                st.warning("⚠️ Aucune attribution")
+        else:
+            st.warning("⚠️ Aucune attribution")
+
     with st.expander("🚜 Engins", expanded=False):
         sorties_jour_eng = [a for a in attributions_engins if a.get('date') == aujourd_hui and not a.get('retourne')]
         if sorties_jour_eng:
@@ -847,18 +995,50 @@ if page == "📊 Dashboard":
         else:
             st.info("✅ Aucun retour aujourd'hui")
 
+    with st.expander("🛵 Scooters retournés aujourd'hui", expanded=False):
+        retours_jour_sco = [a for a in attributions_scooters if a.get('retourne', '').startswith(aujourd_hui)]
+        if retours_jour_sco:
+            df_ret_sco = pd.DataFrame(retours_jour_sco)
+            df_ret_sco['type'] = df_ret_sco['immatriculation'].apply(lambda x: next((s['type'] for s in scooters if s['immatriculation'] == x), ""))
+            df_ret_sco['marque'] = df_ret_sco['immatriculation'].apply(lambda x: next((s['marque'] for s in scooters if s['immatriculation'] == x), ""))
+            if filtre_service != "Tous":
+                df_ret_sco = df_ret_sco[df_ret_sco['service'] == filtre_service]
+            if len(df_ret_sco) > 0:
+                for srv in (services if filtre_service == "Tous" else [filtre_service]):
+                    df_srv = df_ret_sco[df_ret_sco['service'] == srv]
+                    if len(df_srv) > 0:
+                        st.markdown(f"#### 🔹 {srv}")
+                        st.dataframe(df_srv[['immatriculation', 'type', 'marque', 'date', 'retourne']], use_container_width=True, hide_index=True)
+            else:
+                st.info("✅ Aucun retour aujourd'hui")
+        else:
+            st.info("✅ Aucun retour aujourd'hui")
+
     st.markdown("---")
     st.markdown("### 🔙 Retourner un Véhicule")
     sortis = [a for a in attributions if not a.get('retourne')]
     if sortis:
         col_r1, col_r2 = st.columns([3, 1])
         immat_ret = col_r1.selectbox("Véhicule", [f"{v['immatriculation']} - {v['service']}" for v in sortis])
-        if col_r2.button("✅ Retourner", type="primary"):
+        if col_r2.button("✅ Retourner", type="primary", key="ret_vh"):
             retourner_vehicule(immat_ret.split(" - ")[0])
-            st.success(f"✅ Retourné !")
+            st.success("✅ Retourné !")
             st.rerun()
     else:
         st.info("Aucun véhicule distribué")
+
+    st.markdown("---")
+    st.markdown("### 🔙 Retourner un Scooter")
+    sortis_sco = [a for a in attributions_scooters if not a.get('retourne')]
+    if sortis_sco:
+        col_r1, col_r2 = st.columns([3, 1])
+        immat_ret_sco = col_r1.selectbox("Scooter", [f"{v['immatriculation']} - {v['service']}" for v in sortis_sco])
+        if col_r2.button("✅ Retourner", type="primary", key="ret_sco"):
+            retourner_scooter(immat_ret_sco.split(" - ")[0])
+            st.success("✅ Retourné !")
+            st.rerun()
+    else:
+        st.info("Aucun scooter distribué")
 
 elif page == "➕ Saisir un véhicule":
     st.markdown("# ➕ Nouveau Véhicule")
@@ -1029,6 +1209,90 @@ elif page == "🔨 Pannes & Interventions":
                 st.write(f"**Type:** {interv.get('type', '')} | **Statut:** {statut}")
                 st.info(interv.get('commentaire', ''))
 
+elif page == "🛵 Saisir un scooter":
+    st.markdown("# 🛵 Nouveau Scooter")
+    st.markdown("<p class='page-intro'>Ajouter un scooter à votre flotte</p>", unsafe_allow_html=True)
+    with st.form("form_sco"):
+        col1, col2 = st.columns(2)
+        immat_sco = col1.text_input("Immatriculation *", placeholder="AB-123-CD")
+        marque_sco = col2.text_input("Marque *", placeholder="Piaggio")
+        type_sco = st.selectbox("Type *", categories_scooters)
+        if st.form_submit_button("✅ Enregistrer", type="primary"):
+            if immat_sco and marque_sco:
+                add_scooter(immat_sco, type_sco, marque_sco)
+                st.success(f"✅ {immat_sco} ajouté !")
+                st.rerun()
+            else:
+                st.error("❌ Champs requis")
+    st.markdown("---")
+    st.markdown("### 📋 Liste des scooters")
+    if scooters:
+        for sco in scooters:
+            col1, col2 = st.columns([5, 1])
+            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{sco['immatriculation']}</span> <span style='color: {t['label_color']};'>— {sco['type']} {sco['marque']}</span></div>", unsafe_allow_html=True)
+            if col2.button("🗑️", key=f"del_sco_{sco['immatriculation']}"):
+                delete_scooter(sco['immatriculation'])
+                st.rerun()
+
+elif page == "🔧 Attribuer un scooter":
+    st.markdown("# 🔧 Attribution Scooter")
+    st.markdown("<p class='page-intro'>Attribuer un scooter à un service</p>", unsafe_allow_html=True)
+    if scooters:
+        with st.form("form_attr_sco"):
+            col1, col2 = st.columns(2)
+            sco_sel = col1.selectbox("Scooter *", [f"{s['immatriculation']} - {s['type']} {s['marque']}" for s in scooters])
+            service_sco = col2.selectbox("Service *", services)
+            col3, col4 = st.columns(2)
+            date_s_sco = col3.date_input("Date sortie", value=datetime.now())
+            heure_s_sco = col4.time_input("Heure sortie", value=datetime.now().time())
+            date_retour_sco = st.date_input("Date de retour prévue *", value=datetime.now() + timedelta(days=1))
+            if st.form_submit_button("✅ Confirmer", type="primary"):
+                if date_retour_sco < date_s_sco:
+                    st.error("❌ La date de retour doit être après la date de sortie")
+                else:
+                    add_attribution_scooter(sco_sel.split(" - ")[0], service_sco, date_s_sco.strftime("%d/%m/%Y"), heure_s_sco.strftime("%H:%M"), date_retour_sco.strftime("%d/%m/%Y"))
+                    st.success("✅ Attribué !")
+                    st.rerun()
+    else:
+        st.warning("⚠️ Aucun scooter")
+    st.markdown("---")
+    st.markdown("### 📜 Historique")
+    if attributions_scooters:
+        st.dataframe(pd.DataFrame(attributions_scooters), use_container_width=True, hide_index=True)
+
+elif page == "🔨 Interventions Scooters":
+    st.markdown("# 🔨 Interventions Scooters")
+    st.markdown("<p class='page-intro'>Déclarer et suivre les interventions</p>", unsafe_allow_html=True)
+    st.markdown("### ➕ Déclarer")
+    if scooters:
+        with st.form("form_interv_sco"):
+            col1, col2 = st.columns(2)
+            sco_sel_i = col1.selectbox("Scooter *", [f"{s['immatriculation']} - {s['type']} {s['marque']}" for s in scooters])
+            type_i_sco = col2.selectbox("Type *", ["Panne", "Entretien", "Réparation", "Contrôle", "Autre"])
+            col3, col4 = st.columns(2)
+            date_i_sco = col3.date_input("Date *", value=datetime.now())
+            heure_i_sco = col4.time_input("Heure *", value=datetime.now().time())
+            comm_sco = st.text_area("Commentaire *", height=100)
+            statut_sco = st.selectbox("Statut", ["En cours", "Terminée", "En attente"])
+            if st.form_submit_button("✅ Enregistrer", type="primary"):
+                if comm_sco:
+                    add_intervention_scooter(sco_sel_i.split(" - ")[0], type_i_sco, date_i_sco.strftime("%d/%m/%Y"), heure_i_sco.strftime("%H:%M"), comm_sco, statut_sco)
+                    st.success("✅ Enregistré !")
+                    st.rerun()
+    else:
+        st.warning("⚠️ Aucun scooter enregistré")
+    st.markdown("---")
+    st.markdown("### 📋 Historique")
+    if interventions_scooters:
+        for interv in interventions_scooters[:20]:
+            statut = interv.get('statut', '')
+            emoji = "🔴" if statut == "En cours" else "✅" if statut == "Terminée" else "⏸️"
+            with st.expander(f"{emoji} {interv.get('immatriculation', '')} - {interv.get('type', '')} - {interv.get('date', '')}"):
+                st.write(f"**Type:** {interv.get('type', '')} | **Statut:** {statut}")
+                st.info(interv.get('commentaire', ''))
+    else:
+        st.info("Aucune intervention enregistrée")
+
 elif page == "🚜 Saisir un engin":
     st.markdown("# 🚜 Nouvel Engin")
     st.markdown("<p class='page-intro'>Ajouter un engin à votre parc</p>", unsafe_allow_html=True)
@@ -1185,4 +1449,22 @@ elif page == "⚙️ Paramètres":
         if c2.button("➕", key="ace", type="primary"):
             if nv_cat_eng:
                 add_category_engin(nv_cat_eng)
+                st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 🛵 Scooters")
+    st.markdown("#### 🏷️ Catégories Scooters")
+    col_sco = st.columns(2)[0]
+    with col_sco:
+        for cat in categories_scooters:
+            c1, c2 = st.columns([4, 1])
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{cat}</div>", unsafe_allow_html=True)
+            if c2.button("🗑️", key=f"dcs_{cat}"):
+                delete_category_scooter(cat)
+                st.rerun()
+        c1, c2 = st.columns([3, 1])
+        nv_cat_sco = c1.text_input("Nouvelle catégorie scooter", label_visibility="collapsed", placeholder="Nouvelle catégorie scooter...")
+        if c2.button("➕", key="acs", type="primary"):
+            if nv_cat_sco:
+                add_category_scooter(nv_cat_sco)
                 st.rerun()
