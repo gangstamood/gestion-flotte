@@ -6,6 +6,7 @@ from googleapiclient.discovery import build
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 import io
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide", initial_sidebar_state="expanded")
 
@@ -23,12 +24,9 @@ st.markdown("""
     
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header[data-testid="stHeader"] {background: transparent !important;}
+    header[data-testid="stHeader"] {background: transparent !important; pointer-events: none;}
     [data-testid="stToolbar"] {display: none !important;}
-    [data-testid="stSidebar"] [data-testid="stSidebarCloseButton"],
-    [data-testid="stSidebar"] button[kind="header"] {
-        display: none !important;
-    }
+    [data-testid="stDecoration"] {display: none !important;}
     
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
@@ -164,6 +162,60 @@ st.markdown("""
     ::-webkit-scrollbar-thumb { background: #3a3a5e; border-radius: 4px; }
 </style>
 """, unsafe_allow_html=True)
+
+# Bouton hamburger personnalisé + forcer sidebar ouverte via JavaScript
+components.html("""
+<script>
+(function() {
+    var doc = window.parent.document;
+
+    // Forcer la sidebar ouverte au chargement
+    function openSidebar() {
+        var sidebar = doc.querySelector('[data-testid="stSidebar"]');
+        if (sidebar) {
+            sidebar.setAttribute('aria-expanded', 'true');
+        }
+        var collapsed = doc.querySelector('[data-testid="collapsedControl"]');
+        if (collapsed) {
+            collapsed.click();
+        }
+    }
+
+    // Créer le bouton hamburger flottant
+    function createHamburger() {
+        if (doc.getElementById('custom-hamburger')) return;
+
+        var btn = doc.createElement('button');
+        btn.id = 'custom-hamburger';
+        btn.innerHTML = '&#9776;';
+        btn.style.cssText = 'position:fixed;top:14px;left:14px;z-index:999999;background:#1a1a2e;color:white;border:1px solid rgba(255,255,255,0.2);border-radius:8px;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.3);transition:all 0.2s;';
+
+        btn.onmouseover = function() { btn.style.background = '#2a2a4e'; };
+        btn.onmouseout = function() { btn.style.background = '#1a1a2e'; };
+
+        btn.onclick = function() {
+            var sidebar = doc.querySelector('[data-testid="stSidebar"]');
+            if (!sidebar) return;
+            var expanded = sidebar.getAttribute('aria-expanded') === 'true';
+            if (expanded) {
+                sidebar.setAttribute('aria-expanded', 'false');
+            } else {
+                sidebar.setAttribute('aria-expanded', 'true');
+            }
+        };
+
+        doc.body.appendChild(btn);
+    }
+
+    // Exécuter au chargement et avec un délai pour laisser Streamlit se charger
+    openSidebar();
+    createHamburger();
+    setTimeout(function() { openSidebar(); createHamburger(); }, 500);
+    setTimeout(function() { openSidebar(); createHamburger(); }, 1500);
+    setTimeout(function() { openSidebar(); createHamburger(); }, 3000);
+})();
+</script>
+""", height=0)
 
 # AUTHENTIFICATION PAR MOT DE PASSE
 def check_password():
