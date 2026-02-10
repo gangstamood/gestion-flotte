@@ -7,7 +7,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 import io
 
-st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide")
+st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide", initial_sidebar_state="expanded")
 
 # ============================================
 # STYLES CSS - DARK MODE DASHBOARD
@@ -23,7 +23,12 @@ st.markdown("""
     
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header[data-testid="stHeader"] {background: transparent !important;}
     [data-testid="stToolbar"] {display: none !important;}
+    [data-testid="stSidebar"] [data-testid="stSidebarCloseButton"],
+    [data-testid="stSidebar"] button[kind="header"] {
+        display: none !important;
+    }
     
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
