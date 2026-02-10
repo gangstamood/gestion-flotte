@@ -23,6 +23,8 @@ st.markdown("""
     
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    [data-testid="stHeader"] {visibility: hidden; height: 0; position: absolute;}
+    [data-testid="collapsedControl"] {visibility: visible; position: fixed; top: 0.5rem; left: 0.5rem; z-index: 999;}
     
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
