@@ -526,8 +526,10 @@ if page == "📊 Dashboard":
     st.markdown("### 📋 Sorties du Jour")
     
     with st.expander("🚗 Véhicules", expanded=False):
-        if attributions:
-            df = pd.DataFrame(attributions)
+        aujourd_hui = datetime.now().strftime("%d/%m/%Y")
+        sorties_jour = [a for a in attributions if a.get('date') == aujourd_hui and not a.get('retourne')]
+        if sorties_jour:
+            df = pd.DataFrame(sorties_jour)
             df['type'] = df['immatriculation'].apply(lambda x: next((v['type'] for v in vehicules if v['immatriculation'] == x), ""))
             df['marque'] = df['immatriculation'].apply(lambda x: next((v['marque'] for v in vehicules if v['immatriculation'] == x), ""))
             if filtre_type != "Tous":
@@ -546,8 +548,9 @@ if page == "📊 Dashboard":
             st.warning("⚠️ Aucune attribution")
     
     with st.expander("🚜 Engins", expanded=False):
-        if attributions_engins:
-            df_eng = pd.DataFrame(attributions_engins)
+        sorties_jour_eng = [a for a in attributions_engins if a.get('date') == aujourd_hui and not a.get('retourne')]
+        if sorties_jour_eng:
+            df_eng = pd.DataFrame(sorties_jour_eng)
             df_eng['type'] = df_eng['numero_serie'].apply(lambda x: next((e['type'] for e in engins if e['numero_serie'] == x), ""))
             df_eng['marque'] = df_eng['numero_serie'].apply(lambda x: next((e['marque'] for e in engins if e['numero_serie'] == x), ""))
             if filtre_service != "Tous":
