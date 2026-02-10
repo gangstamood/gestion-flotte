@@ -187,6 +187,28 @@ def get_css(t):
     ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
     ::-webkit-scrollbar-track {{ background: {t['scrollbar_track']}; }}
     ::-webkit-scrollbar-thumb {{ background: {t['scrollbar_thumb']}; border-radius: 4px; }}
+
+    /* ===== RESPONSIVE MOBILE ===== */
+    @media (max-width: 768px) {{
+        .main .block-container {{ padding: 1rem 0.75rem; }}
+        h1 {{ font-size: 1.4rem !important; }}
+        h2, h3 {{ font-size: 1.1rem !important; }}
+        [data-testid="stMetric"] {{ padding: 1rem; border-radius: 12px; }}
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {{ font-size: 1.8rem !important; }}
+        [data-testid="stMetric"] label {{ font-size: 0.75rem !important; }}
+        .stButton > button {{ padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 8px; }}
+        [data-testid="stForm"] {{ padding: 1rem; border-radius: 12px; }}
+        [data-testid="stSidebar"] {{ width: 85vw !important; max-width: 300px; }}
+        .sidebar-title {{ font-size: 1.2rem; }}
+        .page-intro {{ font-size: 0.85rem; margin-bottom: 1rem; }}
+        hr {{ margin: 1rem 0 !important; }}
+    }}
+    @media (max-width: 480px) {{
+        .main .block-container {{ padding: 0.75rem 0.5rem; }}
+        h1 {{ font-size: 1.2rem !important; }}
+        [data-testid="stMetric"] {{ padding: 0.75rem; }}
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {{ font-size: 1.5rem !important; }}
+    }}
 </style>
 """
 
@@ -197,25 +219,44 @@ components.html(f"""
 <script>
 (function() {{
     var doc = window.parent.document;
-    var sidebarOpen = true;
+    var isMobile = window.parent.innerWidth <= 768;
+    var sidebarOpen = !isMobile;
     var bgColor = '{t["hamburger_bg"]}';
     var hoverColor = '{t["hamburger_hover"]}';
     var textColor = '{t["h1_color"]}';
+
+    function getSidebarWidth() {{
+        if (window.parent.innerWidth <= 480) return Math.min(window.parent.innerWidth * 0.85, 280);
+        if (window.parent.innerWidth <= 768) return Math.min(window.parent.innerWidth * 0.85, 300);
+        return 300;
+    }}
 
     function setSidebarState(open) {{
         var sidebar = doc.querySelector('[data-testid="stSidebar"]');
         if (!sidebar) return;
         sidebarOpen = open;
+        var w = getSidebarWidth();
         if (open) {{
             sidebar.setAttribute('aria-expanded', 'true');
             sidebar.style.setProperty('transform', 'none', 'important');
-            sidebar.style.setProperty('width', '300px', 'important');
-            sidebar.style.setProperty('min-width', '300px', 'important');
+            sidebar.style.setProperty('width', w + 'px', 'important');
+            sidebar.style.setProperty('min-width', w + 'px', 'important');
             sidebar.style.setProperty('visibility', 'visible', 'important');
-            sidebar.style.setProperty('position', 'relative', 'important');
+            if (isMobile) {{
+                sidebar.style.setProperty('position', 'fixed', 'important');
+                sidebar.style.setProperty('z-index', '99999', 'important');
+                sidebar.style.setProperty('top', '0', 'important');
+                sidebar.style.setProperty('left', '0', 'important');
+                sidebar.style.setProperty('height', '100vh', 'important');
+                sidebar.style.setProperty('box-shadow', '4px 0 20px rgba(0,0,0,0.3)', 'important');
+            }} else {{
+                sidebar.style.setProperty('position', 'relative', 'important');
+                sidebar.style.removeProperty('z-index');
+                sidebar.style.removeProperty('box-shadow');
+            }}
         }} else {{
             sidebar.setAttribute('aria-expanded', 'false');
-            sidebar.style.setProperty('transform', 'translateX(-300px)', 'important');
+            sidebar.style.setProperty('transform', 'translateX(-' + w + 'px)', 'important');
             sidebar.style.setProperty('width', '0px', 'important');
             sidebar.style.setProperty('min-width', '0px', 'important');
             sidebar.style.setProperty('visibility', 'hidden', 'important');
@@ -656,7 +697,7 @@ if page == "📊 Dashboard":
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
                     <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{immat}</span>
                     <span style='color:{t['label_color']};margin-left:1rem;'>{v.get('marque','')} — {v.get('type','')}</span>
-                    <span style='float:right;color:{couleur};font-weight:500;'>{statut}</span>
+                    <br/><span style='color:{couleur};font-weight:500;font-size:0.9rem;'>{statut}</span>
                 </div>""", unsafe_allow_html=True)
         else:
             st.info("Aucun véhicule enregistré")
@@ -698,7 +739,7 @@ if page == "📊 Dashboard":
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
                     <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{num}</span>
                     <span style='color:{t['label_color']};margin-left:1rem;'>{e.get('marque','')} — {e.get('type','')}</span>
-                    <span style='float:right;color:{couleur};font-weight:500;'>{statut}</span>
+                    <br/><span style='color:{couleur};font-weight:500;font-size:0.9rem;'>{statut}</span>
                 </div>""", unsafe_allow_html=True)
         else:
             st.info("Aucun engin enregistré")
