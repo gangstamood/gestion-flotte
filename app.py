@@ -29,6 +29,21 @@ st.markdown("""
     [data-testid="stStatusWidget"] {display: none !important;}
     .stDeployButton, .stAppDeployButton, [data-testid="manage-app-button"] {display: none !important;}
     iframe[title="streamlit_cloud"] {display: none !important;}
+    .viewerBadge_container__r5tak, ._profileContainer_gzau3_53, ._profilePreview_gzau3_63 {display: none !important;}
+    [data-testid="manage-app-button"], [data-testid="baseButton-header"] {display: none !important;}
+    section[data-testid="stBottomBlockContainer"] ~ div {display: none !important;}
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        position: fixed !important;
+        top: 0.75rem !important;
+        left: 0.75rem !important;
+        z-index: 999999 !important;
+        background: rgba(30, 30, 50, 0.9) !important;
+        border-radius: 8px !important;
+        padding: 0.25rem !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+    }
     
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
