@@ -567,6 +567,30 @@ if page == "📊 Dashboard":
             st.warning("⚠️ Aucune attribution")
     
     st.markdown("---")
+    st.markdown("### 🔙 Retours du Jour")
+
+    with st.expander("🚗 Véhicules retournés aujourd'hui", expanded=False):
+        retours_jour = [a for a in attributions if a.get('retourne', '').startswith(aujourd_hui)]
+        if retours_jour:
+            df_ret = pd.DataFrame(retours_jour)
+            df_ret['type'] = df_ret['immatriculation'].apply(lambda x: next((v['type'] for v in vehicules if v['immatriculation'] == x), ""))
+            df_ret['marque'] = df_ret['immatriculation'].apply(lambda x: next((v['marque'] for v in vehicules if v['immatriculation'] == x), ""))
+            if filtre_type != "Tous":
+                df_ret = df_ret[df_ret['type'] == filtre_type]
+            if filtre_service != "Tous":
+                df_ret = df_ret[df_ret['service'] == filtre_service]
+            if len(df_ret) > 0:
+                for srv in (services if filtre_service == "Tous" else [filtre_service]):
+                    df_srv = df_ret[df_ret['service'] == srv]
+                    if len(df_srv) > 0:
+                        st.markdown(f"#### 🔹 {srv}")
+                        st.dataframe(df_srv[['immatriculation', 'type', 'marque', 'date', 'retourne']], use_container_width=True, hide_index=True)
+            else:
+                st.info("✅ Aucun retour aujourd'hui")
+        else:
+            st.info("✅ Aucun retour aujourd'hui")
+
+    st.markdown("---")
     st.markdown("### 🔙 Retourner un Véhicule")
     sortis = [a for a in attributions if not a.get('retourne')]
     if sortis:
@@ -637,9 +661,12 @@ elif page == "🔧 Attribuer un véhicule":
             heure_s = col4.time_input("Heure sortie", value=datetime.now().time())
             date_retour = st.date_input("Date de retour prévue *", value=datetime.now() + timedelta(days=1))
             if st.form_submit_button("✅ Confirmer", type="primary"):
-                add_attribution(immat_sel.split(" - ")[0], service, date_s.strftime("%d/%m/%Y"), heure_s.strftime("%H:%M"), date_retour.strftime("%d/%m/%Y"))
-                st.success(f"✅ Attribué !")
-                st.rerun()
+                if date_retour < date_s:
+                    st.error("❌ La date de retour doit être après la date de sortie")
+                else:
+                    add_attribution(immat_sel.split(" - ")[0], service, date_s.strftime("%d/%m/%Y"), heure_s.strftime("%H:%M"), date_retour.strftime("%d/%m/%Y"))
+                    st.success(f"✅ Attribué !")
+                    st.rerun()
     else:
         st.warning("⚠️ Aucun véhicule")
     st.markdown("---")
