@@ -1,2 +1,9 @@
 [client]
 toolbarMode = "minimal"
+showSidebarNavigation = false
+
+[server]
+enableStaticServing = false
+
+[ui]
+hideSidebarNav = true
