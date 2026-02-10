@@ -25,6 +25,10 @@ st.markdown("""
     footer {visibility: hidden;}
     [data-testid="stHeader"] {background: transparent !important; border: none !important; box-shadow: none !important;}
     [data-testid="stToolbar"] {display: none !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+    [data-testid="stStatusWidget"] {display: none !important;}
+    .stDeployButton, .stAppDeployButton, [data-testid="manage-app-button"] {display: none !important;}
+    iframe[title="streamlit_cloud"] {display: none !important;}
     
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
