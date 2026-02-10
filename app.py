@@ -11,216 +11,247 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide", initial_sidebar_state="expanded")
 
 # ============================================
-# STYLES CSS - DARK MODE DASHBOARD
+# SYSTÈME DE THÈMES
 # ============================================
-st.markdown("""
+if 'theme' not in st.session_state:
+    st.session_state['theme'] = 'Sombre Classique'
+
+THEMES = {
+    "Sombre Classique": {
+        "bg": "linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%)",
+        "sidebar_bg": "linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%)",
+        "card_bg": "linear-gradient(145deg, #1e1e32 0%, #252542 100%)",
+        "card_border": "rgba(255,255,255,0.05)",
+        "card_shadow": "0 4px 20px rgba(0,0,0,0.3)",
+        "card_hover_shadow": "0 8px 30px rgba(99, 102, 241, 0.15)",
+        "input_bg": "#1e1e32",
+        "input_border": "rgba(255,255,255,0.1)",
+        "btn_bg": "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+        "btn_shadow": "0 4px 15px rgba(99, 102, 241, 0.3)",
+        "btn_hover_shadow": "0 6px 20px rgba(99, 102, 241, 0.4)",
+        "dl_btn_bg": "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+        "dl_btn_shadow": "0 4px 15px rgba(16, 185, 129, 0.3)",
+        "h1_color": "#ffffff",
+        "h23_color": "#e0e0e0",
+        "metric_label": "#a0a0a0",
+        "metric_value": "#ffffff",
+        "label_color": "#c0c0c0",
+        "text_color": "#c0c0c0",
+        "strong_color": "#e0e0e0",
+        "intro_color": "#808080",
+        "sidebar_title": "#ffffff",
+        "hr_color": "rgba(255,255,255,0.05)",
+        "expander_bg": "#1e1e32",
+        "expander_border": "rgba(255,255,255,0.05)",
+        "expander_color": "#e0e0e0",
+        "df_bg": "#1e1e32",
+        "scrollbar_track": "#1a1a2e",
+        "scrollbar_thumb": "#3a3a5e",
+        "hamburger_bg": "#1a1a2e",
+        "hamburger_hover": "#2a2a4e",
+    },
+    "Moderne Clair": {
+        "bg": "linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 50%, #f0f2f5 100%)",
+        "sidebar_bg": "linear-gradient(180deg, #ffffff 0%, #f8f9fc 100%)",
+        "card_bg": "#ffffff",
+        "card_border": "rgba(0,0,0,0.06)",
+        "card_shadow": "0 2px 12px rgba(0,0,0,0.06)",
+        "card_hover_shadow": "0 6px 24px rgba(99, 102, 241, 0.12)",
+        "input_bg": "#ffffff",
+        "input_border": "rgba(0,0,0,0.1)",
+        "btn_bg": "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)",
+        "btn_shadow": "0 2px 8px rgba(99, 102, 241, 0.25)",
+        "btn_hover_shadow": "0 4px 16px rgba(99, 102, 241, 0.35)",
+        "dl_btn_bg": "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
+        "dl_btn_shadow": "0 2px 8px rgba(16, 185, 129, 0.25)",
+        "h1_color": "#1a1a2e",
+        "h23_color": "#2d2d44",
+        "metric_label": "#6b7280",
+        "metric_value": "#1a1a2e",
+        "label_color": "#4b5563",
+        "text_color": "#4b5563",
+        "strong_color": "#1f2937",
+        "intro_color": "#9ca3af",
+        "sidebar_title": "#1a1a2e",
+        "hr_color": "rgba(0,0,0,0.06)",
+        "expander_bg": "#ffffff",
+        "expander_border": "rgba(0,0,0,0.06)",
+        "expander_color": "#2d2d44",
+        "df_bg": "#ffffff",
+        "scrollbar_track": "#f0f0f0",
+        "scrollbar_thumb": "#c0c0c0",
+        "hamburger_bg": "#ffffff",
+        "hamburger_hover": "#f0f0f5",
+    },
+    "Bleu Nuit": {
+        "bg": "linear-gradient(135deg, #0a1628 0%, #0f2440 50%, #132d4f 100%)",
+        "sidebar_bg": "linear-gradient(180deg, #0d1f36 0%, #091726 100%)",
+        "card_bg": "linear-gradient(145deg, #112240 0%, #1a3355 100%)",
+        "card_border": "rgba(100,180,255,0.08)",
+        "card_shadow": "0 4px 20px rgba(0,0,0,0.4)",
+        "card_hover_shadow": "0 8px 30px rgba(59, 130, 246, 0.2)",
+        "input_bg": "#112240",
+        "input_border": "rgba(100,180,255,0.12)",
+        "btn_bg": "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+        "btn_shadow": "0 4px 15px rgba(59, 130, 246, 0.3)",
+        "btn_hover_shadow": "0 6px 20px rgba(59, 130, 246, 0.45)",
+        "dl_btn_bg": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)",
+        "dl_btn_shadow": "0 4px 15px rgba(14, 165, 233, 0.3)",
+        "h1_color": "#e0f0ff",
+        "h23_color": "#c0d8f0",
+        "metric_label": "#7ba3c9",
+        "metric_value": "#e0f0ff",
+        "label_color": "#93b4d4",
+        "text_color": "#93b4d4",
+        "strong_color": "#c0d8f0",
+        "intro_color": "#5a8ab5",
+        "sidebar_title": "#e0f0ff",
+        "hr_color": "rgba(100,180,255,0.08)",
+        "expander_bg": "#112240",
+        "expander_border": "rgba(100,180,255,0.08)",
+        "expander_color": "#c0d8f0",
+        "df_bg": "#112240",
+        "scrollbar_track": "#0d1f36",
+        "scrollbar_thumb": "#1e3a5f",
+        "hamburger_bg": "#0d1f36",
+        "hamburger_hover": "#1a3355",
+    },
+    "Vert Nature": {
+        "bg": "linear-gradient(135deg, #0a1a0f 0%, #0f2818 50%, #132d1a 100%)",
+        "sidebar_bg": "linear-gradient(180deg, #0f2018 0%, #0a150e 100%)",
+        "card_bg": "linear-gradient(145deg, #14301c 0%, #1a4025 100%)",
+        "card_border": "rgba(34,197,94,0.1)",
+        "card_shadow": "0 4px 20px rgba(0,0,0,0.35)",
+        "card_hover_shadow": "0 8px 30px rgba(34,197,94,0.15)",
+        "input_bg": "#14301c",
+        "input_border": "rgba(34,197,94,0.15)",
+        "btn_bg": "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+        "btn_shadow": "0 4px 15px rgba(34,197,94,0.3)",
+        "btn_hover_shadow": "0 6px 20px rgba(34,197,94,0.45)",
+        "dl_btn_bg": "linear-gradient(135deg, #a3e635 0%, #84cc16 100%)",
+        "dl_btn_shadow": "0 4px 15px rgba(163,230,53,0.3)",
+        "h1_color": "#e0ffe8",
+        "h23_color": "#b8e6c4",
+        "metric_label": "#6fad7e",
+        "metric_value": "#e0ffe8",
+        "label_color": "#8cc49a",
+        "text_color": "#8cc49a",
+        "strong_color": "#b8e6c4",
+        "intro_color": "#5a9468",
+        "sidebar_title": "#e0ffe8",
+        "hr_color": "rgba(34,197,94,0.08)",
+        "expander_bg": "#14301c",
+        "expander_border": "rgba(34,197,94,0.1)",
+        "expander_color": "#b8e6c4",
+        "df_bg": "#14301c",
+        "scrollbar_track": "#0f2018",
+        "scrollbar_thumb": "#1e5030",
+        "hamburger_bg": "#0f2018",
+        "hamburger_hover": "#1a4025",
+    },
+}
+
+t = THEMES[st.session_state['theme']]
+
+def get_css(t):
+    return f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    .stApp {
-        background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
-        font-family: 'Inter', sans-serif;
-    }
-    
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header[data-testid="stHeader"] {background: transparent !important; pointer-events: none;}
-    [data-testid="stToolbar"] {display: none !important;}
-    [data-testid="stDecoration"] {display: none !important;}
-    
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
-        border-right: 1px solid rgba(255,255,255,0.05);
-    }
-    
-    .main .block-container {
-        padding: 2rem 3rem;
-        max-width: 1400px;
-    }
-    
-    h1 {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        font-size: 2rem !important;
-        margin-bottom: 0.5rem !important;
-    }
-    
-    h2, h3 {
-        color: #e0e0e0 !important;
-        font-weight: 600 !important;
-    }
-    
-    [data-testid="stMetric"] {
-        background: linear-gradient(145deg, #1e1e32 0%, #252542 100%);
-        border: 1px solid rgba(255,255,255,0.05);
-        border-radius: 16px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    }
-    
-    [data-testid="stMetric"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15);
-    }
-    
-    [data-testid="stMetric"] label {
-        color: #a0a0a0 !important;
-        font-size: 0.85rem !important;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #ffffff !important;
-        font-size: 2.5rem !important;
-        font-weight: 700 !important;
-    }
-    
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div,
-    .stTextArea > div > div > textarea,
-    .stNumberInput > div > div > input {
-        background-color: #1e1e32 !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 10px !important;
-        color: #ffffff !important;
-    }
-    
-    .stTextInput > label,
-    .stSelectbox > label,
-    .stTextArea > label,
-    .stNumberInput > label,
-    .stDateInput > label,
-    .stTimeInput > label {
-        color: #c0c0c0 !important;
-        font-weight: 500 !important;
-    }
-    
-    .stButton > button {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 0.6rem 1.5rem;
-        font-weight: 600;
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-    }
-    
-    .stDownloadButton > button {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    }
-    
-    [data-testid="stForm"] {
-        background: linear-gradient(145deg, #1e1e32 0%, #252542 100%);
-        border: 1px solid rgba(255,255,255,0.05);
-        border-radius: 16px;
-        padding: 1.5rem;
-    }
-    
-    .stDataFrame {
-        background: #1e1e32;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.05);
-    }
-    
-    .streamlit-expanderHeader {
-        background: #1e1e32 !important;
-        border: 1px solid rgba(255,255,255,0.05) !important;
-        border-radius: 10px !important;
-        color: #e0e0e0 !important;
-    }
-    
-    hr {
-        border-color: rgba(255,255,255,0.05) !important;
-        margin: 2rem 0 !important;
-    }
-    
-    p, .stText, .stMarkdown { color: #c0c0c0; }
-    strong { color: #e0e0e0; }
-    
-    .page-intro {
-        color: #808080;
-        font-size: 0.95rem;
-        margin-bottom: 2rem;
-    }
-    
-    .sidebar-title {
-        color: #ffffff;
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-    
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #1a1a2e; }
-    ::-webkit-scrollbar-thumb { background: #3a3a5e; border-radius: 4px; }
+    .stApp {{ background: {t['bg']}; font-family: 'Inter', sans-serif; }}
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header[data-testid="stHeader"] {{background: transparent !important; pointer-events: none;}}
+    [data-testid="stToolbar"] {{display: none !important;}}
+    [data-testid="stDecoration"] {{display: none !important;}}
+    [data-testid="stSidebar"] {{ background: {t['sidebar_bg']}; border-right: 1px solid {t['card_border']}; }}
+    .main .block-container {{ padding: 2rem 3rem; max-width: 1400px; }}
+    h1 {{ color: {t['h1_color']} !important; font-weight: 700 !important; font-size: 2rem !important; margin-bottom: 0.5rem !important; }}
+    h2, h3 {{ color: {t['h23_color']} !important; font-weight: 600 !important; }}
+    [data-testid="stMetric"] {{ background: {t['card_bg']}; border: 1px solid {t['card_border']}; border-radius: 16px; padding: 1.5rem; box-shadow: {t['card_shadow']}; }}
+    [data-testid="stMetric"]:hover {{ transform: translateY(-2px); box-shadow: {t['card_hover_shadow']}; }}
+    [data-testid="stMetric"] label {{ color: {t['metric_label']} !important; font-size: 0.85rem !important; text-transform: uppercase; letter-spacing: 0.5px; }}
+    [data-testid="stMetric"] [data-testid="stMetricValue"] {{ color: {t['metric_value']} !important; font-size: 2.5rem !important; font-weight: 700 !important; }}
+    .stTextInput > div > div > input, .stSelectbox > div > div, .stTextArea > div > div > textarea, .stNumberInput > div > div > input {{ background-color: {t['input_bg']} !important; border: 1px solid {t['input_border']} !important; border-radius: 10px !important; color: {t['h1_color']} !important; }}
+    .stTextInput > label, .stSelectbox > label, .stTextArea > label, .stNumberInput > label, .stDateInput > label, .stTimeInput > label {{ color: {t['label_color']} !important; font-weight: 500 !important; }}
+    .stButton > button {{ background: {t['btn_bg']}; color: white; border: none; border-radius: 10px; padding: 0.6rem 1.5rem; font-weight: 600; box-shadow: {t['btn_shadow']}; }}
+    .stButton > button:hover {{ transform: translateY(-1px); box-shadow: {t['btn_hover_shadow']}; }}
+    .stDownloadButton > button {{ background: {t['dl_btn_bg']}; box-shadow: {t['dl_btn_shadow']}; }}
+    [data-testid="stForm"] {{ background: {t['card_bg']}; border: 1px solid {t['card_border']}; border-radius: 16px; padding: 1.5rem; }}
+    .stDataFrame {{ background: {t['df_bg']}; border-radius: 12px; border: 1px solid {t['card_border']}; }}
+    .streamlit-expanderHeader {{ background: {t['expander_bg']} !important; border: 1px solid {t['expander_border']} !important; border-radius: 10px !important; color: {t['expander_color']} !important; }}
+    hr {{ border-color: {t['hr_color']} !important; margin: 2rem 0 !important; }}
+    p, .stText, .stMarkdown {{ color: {t['text_color']}; }}
+    strong {{ color: {t['strong_color']}; }}
+    .page-intro {{ color: {t['intro_color']}; font-size: 0.95rem; margin-bottom: 2rem; }}
+    .sidebar-title {{ color: {t['sidebar_title']}; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }}
+    ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
+    ::-webkit-scrollbar-track {{ background: {t['scrollbar_track']}; }}
+    ::-webkit-scrollbar-thumb {{ background: {t['scrollbar_thumb']}; border-radius: 4px; }}
 </style>
-""", unsafe_allow_html=True)
+"""
+
+st.markdown(get_css(t), unsafe_allow_html=True)
 
 # Bouton hamburger personnalisé + toggle sidebar via manipulation CSS directe
-components.html("""
+components.html(f"""
 <script>
-(function() {
+(function() {{
     var doc = window.parent.document;
     var sidebarOpen = true;
+    var bgColor = '{t["hamburger_bg"]}';
+    var hoverColor = '{t["hamburger_hover"]}';
+    var textColor = '{t["h1_color"]}';
 
-    function setSidebarState(open) {
+    function setSidebarState(open) {{
         var sidebar = doc.querySelector('[data-testid="stSidebar"]');
         if (!sidebar) return;
         sidebarOpen = open;
-        if (open) {
+        if (open) {{
             sidebar.setAttribute('aria-expanded', 'true');
             sidebar.style.setProperty('transform', 'none', 'important');
             sidebar.style.setProperty('width', '300px', 'important');
             sidebar.style.setProperty('min-width', '300px', 'important');
             sidebar.style.setProperty('visibility', 'visible', 'important');
             sidebar.style.setProperty('position', 'relative', 'important');
-        } else {
+        }} else {{
             sidebar.setAttribute('aria-expanded', 'false');
             sidebar.style.setProperty('transform', 'translateX(-300px)', 'important');
             sidebar.style.setProperty('width', '0px', 'important');
             sidebar.style.setProperty('min-width', '0px', 'important');
             sidebar.style.setProperty('visibility', 'hidden', 'important');
             sidebar.style.setProperty('position', 'fixed', 'important');
-        }
-        // Mettre à jour l'icône du bouton
+        }}
         var btn = doc.getElementById('custom-hamburger');
         if (btn) btn.innerHTML = open ? '&#10005;' : '&#9776;';
-    }
+    }}
 
-    function createHamburger() {
-        if (doc.getElementById('custom-hamburger')) return;
+    function createHamburger() {{
+        var existing = doc.getElementById('custom-hamburger');
+        if (existing) existing.remove();
         var btn = doc.createElement('button');
         btn.id = 'custom-hamburger';
         btn.innerHTML = '&#10005;';
-        btn.style.cssText = 'position:fixed;top:14px;left:14px;z-index:999999;background:#1a1a2e;color:white;border:1px solid rgba(255,255,255,0.2);border-radius:8px;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.3);transition:all 0.2s;pointer-events:auto;';
-        btn.onmouseover = function() { btn.style.background = '#2a2a4e'; };
-        btn.onmouseout = function() { btn.style.background = '#1a1a2e'; };
-        btn.onclick = function(e) {
+        btn.style.cssText = 'position:fixed;top:14px;left:14px;z-index:999999;background:'+bgColor+';color:'+textColor+';border:1px solid rgba(128,128,128,0.2);border-radius:8px;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.15);transition:all 0.2s;pointer-events:auto;';
+        btn.onmouseover = function() {{ btn.style.background = hoverColor; }};
+        btn.onmouseout = function() {{ btn.style.background = bgColor; }};
+        btn.onclick = function(e) {{
             e.preventDefault();
             e.stopPropagation();
             setSidebarState(!sidebarOpen);
-        };
+        }};
         doc.body.appendChild(btn);
-    }
+    }}
 
-    // Forcer sidebar ouverte + créer bouton
-    function init() {
+    function init() {{
         createHamburger();
         setSidebarState(true);
-    }
+    }}
 
     init();
     setTimeout(init, 300);
     setTimeout(init, 1000);
     setTimeout(init, 2500);
-})();
+}})();
 </script>
 """, height=0)
 
@@ -236,14 +267,14 @@ def check_password():
     if "password_correct" not in st.session_state:
         st.markdown("<div style='max-width: 400px; margin: 15vh auto; text-align: center;'>", unsafe_allow_html=True)
         st.markdown("## 🚗 Gestion de Flotte")
-        st.markdown("<p style='color: #808080; margin-bottom: 2rem;'>Connectez-vous pour accéder à l'application</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color: {t['intro_color']}; margin-bottom: 2rem;'>Connectez-vous pour accéder à l'application</p>", unsafe_allow_html=True)
         st.text_input("🔒 Mot de passe", type="password", on_change=password_entered, key="password")
         st.markdown("</div>", unsafe_allow_html=True)
         st.stop()
     elif not st.session_state["password_correct"]:
         st.markdown("<div style='max-width: 400px; margin: 15vh auto; text-align: center;'>", unsafe_allow_html=True)
         st.markdown("## 🚗 Gestion de Flotte")
-        st.markdown("<p style='color: #808080; margin-bottom: 2rem;'>Connectez-vous pour accéder à l'application</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color: {t['intro_color']}; margin-bottom: 2rem;'>Connectez-vous pour accéder à l'application</p>", unsafe_allow_html=True)
         st.text_input("🔒 Mot de passe", type="password", on_change=password_entered, key="password")
         st.error("❌ Mot de passe incorrect")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -536,7 +567,7 @@ interventions_engins = get_interventions_engins()
 # SIDEBAR
 with st.sidebar:
     st.markdown("<div class='sidebar-title'>🚗 Flotte</div>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #606060; font-size: 0.85rem; margin-bottom: 2rem;'>Gestion de véhicules</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: {t['intro_color']}; font-size: 0.85rem; margin-bottom: 2rem;'>Gestion de véhicules</p>", unsafe_allow_html=True)
     
     page = st.radio("Navigation", [
         "📊 Dashboard", "📥 Importer des véhicules", "➕ Saisir un véhicule",
@@ -567,7 +598,7 @@ with st.sidebar:
                 st.warning(f"{a['numero_serie']} - {a['service']} ({a['duree_heures']}h)")
     
     st.markdown("---")
-    st.markdown("<div style='background: rgba(16, 185, 129, 0.1); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem;'><p style='color: #10b981; font-size: 0.8rem; margin: 0;'>🗄️ Base connectée</p></div>", unsafe_allow_html=True)
+    st.markdown("<div style='background: rgba(16, 185, 129, 0.08); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem;'><p style='color: #10b981; font-size: 0.8rem; margin: 0;'>🗄️ Base connectée</p></div>", unsafe_allow_html=True)
 
 # PAGES
 if page == "📊 Dashboard":
@@ -622,9 +653,9 @@ if page == "📊 Dashboard":
                 else:
                     statut = "✅ Disponible"
                     couleur = "#10b981"
-                st.markdown(f"""<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:white;font-weight:600;font-size:1rem;'>{immat}</span>
-                    <span style='color:#888;margin-left:1rem;'>{v.get('marque','')} — {v.get('type','')}</span>
+                st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
+                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{immat}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{v.get('marque','')} — {v.get('type','')}</span>
                     <span style='float:right;color:{couleur};font-weight:500;'>{statut}</span>
                 </div>""", unsafe_allow_html=True)
         else:
@@ -637,12 +668,12 @@ if page == "📊 Dashboard":
             for a in sorties_en_cours:
                 immat = a.get('immatriculation', '')
                 info_v = next((v for v in vehicules if v.get('immatriculation') == immat), {})
-                st.markdown(f"""<div style='background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);border-left:4px solid #ef4444;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:white;font-weight:600;'>{immat}</span>
-                    <span style='color:#888;margin-left:1rem;'>{info_v.get('marque','')} — {info_v.get('type','')}</span><br/>
-                    <span style='color:#aaa;font-size:0.85rem;'>📅 Sorti le {a.get('date','')} à {a.get('heure','')}</span>
-                    <span style='color:#aaa;font-size:0.85rem;margin-left:1rem;'>🏢 Service : {a.get('service','')}</span>
-                    <span style='color:#aaa;font-size:0.85rem;margin-left:1rem;'>📆 Retour prévu : {a.get('date_retour_prevue','N/A')}</span>
+                st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #ef4444;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
+                    <span style='color:{t['h1_color']};font-weight:600;'>{immat}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{info_v.get('marque','')} — {info_v.get('type','')}</span><br/>
+                    <span style='color:{t['text_color']};font-size:0.85rem;'>📅 Sorti le {a.get('date','')} à {a.get('heure','')}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>🏢 Service : {a.get('service','')}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>📆 Retour prévu : {a.get('date_retour_prevue','N/A')}</span>
                 </div>""", unsafe_allow_html=True)
         else:
             st.info("Aucun véhicule en sortie actuellement")
@@ -664,9 +695,9 @@ if page == "📊 Dashboard":
                 else:
                     statut = "✅ Disponible"
                     couleur = "#10b981"
-                st.markdown(f"""<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:white;font-weight:600;font-size:1rem;'>{num}</span>
-                    <span style='color:#888;margin-left:1rem;'>{e.get('marque','')} — {e.get('type','')}</span>
+                st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
+                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{num}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{e.get('marque','')} — {e.get('type','')}</span>
                     <span style='float:right;color:{couleur};font-weight:500;'>{statut}</span>
                 </div>""", unsafe_allow_html=True)
         else:
@@ -680,22 +711,22 @@ if page == "📊 Dashboard":
             for i in interventions_en_cours_v:
                 immat = i.get('immatriculation', '')
                 info_v = next((v for v in vehicules if v.get('immatriculation') == immat), {})
-                st.markdown(f"""<div style='background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15);border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:white;font-weight:600;'>{immat}</span>
-                    <span style='color:#888;margin-left:1rem;'>{info_v.get('marque','')} — {info_v.get('type','')}</span><br/>
-                    <span style='color:#aaa;font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
-                    <span style='color:#aaa;font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
+                st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
+                    <span style='color:{t['h1_color']};font-weight:600;'>{immat}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{info_v.get('marque','')} — {info_v.get('type','')}</span><br/>
+                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
                 </div>""", unsafe_allow_html=True)
         if interventions_en_cours_e:
             st.markdown("#### 🚜 Engins")
             for i in interventions_en_cours_e:
                 num = i.get('numero_serie', '')
                 info_e = next((e for e in engins if e.get('numero_serie') == num), {})
-                st.markdown(f"""<div style='background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15);border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:white;font-weight:600;'>{num}</span>
-                    <span style='color:#888;margin-left:1rem;'>{info_e.get('marque','')} — {info_e.get('type','')}</span><br/>
-                    <span style='color:#aaa;font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
-                    <span style='color:#aaa;font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
+                st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
+                    <span style='color:{t['h1_color']};font-weight:600;'>{num}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{info_e.get('marque','')} — {info_e.get('type','')}</span><br/>
+                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
                 </div>""", unsafe_allow_html=True)
         if not interventions_en_cours_v and not interventions_en_cours_e:
             st.info("Aucune intervention en cours")
@@ -808,7 +839,7 @@ elif page == "➕ Saisir un véhicule":
     if vehicules:
         for vh in vehicules:
             col1, col2 = st.columns([5, 1])
-            col1.markdown(f"<div style='background: #1e1e32; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: #fff; font-weight: 600;'>{vh['immatriculation']}</span> <span style='color: #808080;'>— {vh['type']} {vh['marque']}</span></div>", unsafe_allow_html=True)
+            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{vh['immatriculation']}</span> <span style='color: {t['label_color']};'>— {vh['type']} {vh['marque']}</span></div>", unsafe_allow_html=True)
             if col2.button("🗑️", key=f"del_{vh['immatriculation']}"):
                 delete_vehicule(vh['immatriculation'])
                 st.rerun()
@@ -888,7 +919,7 @@ elif page == "⛽ Bons de Carburant":
                     st.error("❌ Champs requis")
         if 'dernier_bon' in st.session_state:
             bon = st.session_state.dernier_bon['bon']
-            st.markdown(f"<div style='background: #1e1e32; border-radius: 16px; padding: 2rem; margin: 1rem 0; border: 1px solid rgba(255,255,255,0.1);'><h3 style='color: #fff; text-align: center;'>📄 BON DE CARBURANT</h3><p style='color: #808080;'><strong style='color: #c0c0c0;'>N°:</strong> {bon['numero_bon']} | <strong style='color: #c0c0c0;'>Véhicule:</strong> {bon['immatriculation']} | <strong style='color: #ef4444;'>Carte N°{bon['numero_carte']}</strong></p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background: {t['input_bg']}; border-radius: 16px; padding: 2rem; margin: 1rem 0; border: 1px solid {t['card_border']};'><h3 style='color: {t['h1_color']}; text-align: center;'>📄 BON DE CARBURANT</h3><p style='color: {t['label_color']};'><strong style='color: {t['strong_color']};'>N°:</strong> {bon['numero_bon']} | <strong style='color: {t['strong_color']};'>Véhicule:</strong> {bon['immatriculation']} | <strong style='color: #ef4444;'>Carte N°{bon['numero_carte']}</strong></p></div>", unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
                 pdf = generer_pdf_bon(bon, st.session_state.dernier_bon['conducteur_nom'], st.session_state.dernier_bon['conducteur_prenom'], st.session_state.dernier_bon.get('logo_url'))
@@ -977,7 +1008,7 @@ elif page == "🚜 Saisir un engin":
     if engins:
         for eng in engins:
             col1, col2 = st.columns([5, 1])
-            col1.markdown(f"<div style='background: #1e1e32; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: #fff; font-weight: 600;'>{eng['numero_serie']}</span> <span style='color: #808080;'>— {eng['type']} {eng['marque']}</span></div>", unsafe_allow_html=True)
+            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{eng['numero_serie']}</span> <span style='color: {t['label_color']};'>— {eng['type']} {eng['marque']}</span></div>", unsafe_allow_html=True)
             if col2.button("🗑️", key=f"del_eng_{eng['numero_serie']}"):
                 delete_engin(eng['numero_serie'])
                 st.rerun()
@@ -1055,15 +1086,24 @@ elif page == "🔨 Interventions Engins":
 
 elif page == "⚙️ Paramètres":
     st.markdown("# ⚙️ Paramètres")
-    st.markdown("<p class='page-intro'>Configurer catégories et services</p>", unsafe_allow_html=True)
-    
+    st.markdown("<p class='page-intro'>Configurer l'application</p>", unsafe_allow_html=True)
+
+    st.markdown("### 🎨 Apparence")
+    theme_names = list(THEMES.keys())
+    current_idx = theme_names.index(st.session_state['theme']) if st.session_state['theme'] in theme_names else 0
+    selected_theme = st.selectbox("Thème", theme_names, index=current_idx)
+    if selected_theme != st.session_state['theme']:
+        st.session_state['theme'] = selected_theme
+        st.rerun()
+
+    st.markdown("---")
     st.markdown("### 🚗 Véhicules")
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("#### 🏷️ Catégories Véhicules")
         for cat in categories:
             c1, c2 = st.columns([4, 1])
-            c1.markdown(f"<div style='background: #1e1e32; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: #e0e0e0;'>{cat}</div>", unsafe_allow_html=True)
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{cat}</div>", unsafe_allow_html=True)
             if c2.button("🗑️", key=f"dc_{cat}"):
                 delete_category(cat)
                 st.rerun()
@@ -1077,7 +1117,7 @@ elif page == "⚙️ Paramètres":
         st.markdown("#### 🏢 Services")
         for srv in services:
             c1, c2 = st.columns([4, 1])
-            c1.markdown(f"<div style='background: #1e1e32; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: #e0e0e0;'>{srv}</div>", unsafe_allow_html=True)
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{srv}</div>", unsafe_allow_html=True)
             if c2.button("🗑️", key=f"ds_{srv}"):
                 delete_service(srv)
                 st.rerun()
@@ -1095,7 +1135,7 @@ elif page == "⚙️ Paramètres":
     with col_eng:
         for cat in categories_engins:
             c1, c2 = st.columns([4, 1])
-            c1.markdown(f"<div style='background: #1e1e32; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: #e0e0e0;'>{cat}</div>", unsafe_allow_html=True)
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{cat}</div>", unsafe_allow_html=True)
             if c2.button("🗑️", key=f"dce_{cat}"):
                 delete_category_engin(cat)
                 st.rerun()
