@@ -585,16 +585,20 @@ if page == "📊 Dashboard":
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        if st.button(f"🚙 Véhicules\n{nb_vehicules}", key="btn_vehicules", use_container_width=True):
+        st.metric("🚙 Véhicules", nb_vehicules)
+        if st.button("📋 Détails", key="btn_vehicules", use_container_width=True):
             st.session_state['dashboard_detail'] = 'vehicules' if st.session_state.get('dashboard_detail') != 'vehicules' else None
     with col2:
-        if st.button(f"🔑 En sortie\n{nb_en_sortie}", key="btn_en_sortie", use_container_width=True):
+        st.metric("🔑 En sortie", nb_en_sortie)
+        if st.button("📋 Détails", key="btn_en_sortie", use_container_width=True):
             st.session_state['dashboard_detail'] = 'en_sortie' if st.session_state.get('dashboard_detail') != 'en_sortie' else None
     with col3:
-        if st.button(f"🚜 Engins\n{nb_engins}", key="btn_engins", use_container_width=True):
+        st.metric("🚜 Engins", nb_engins)
+        if st.button("📋 Détails", key="btn_engins", use_container_width=True):
             st.session_state['dashboard_detail'] = 'engins' if st.session_state.get('dashboard_detail') != 'engins' else None
     with col4:
-        if st.button(f"🔨 Interventions\n{nb_interventions}", key="btn_interventions", use_container_width=True):
+        st.metric("🔨 Interventions", nb_interventions)
+        if st.button("📋 Détails", key="btn_interventions", use_container_width=True):
             st.session_state['dashboard_detail'] = 'interventions' if st.session_state.get('dashboard_detail') != 'interventions' else None
 
     # Affichage des détails selon le bouton cliqué
