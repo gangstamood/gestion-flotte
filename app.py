@@ -620,7 +620,7 @@ if page == "📊 Dashboard":
         if st.button("📋 Détails", key="btn_vehicules", use_container_width=True):
             st.session_state['dashboard_detail'] = 'vehicules' if st.session_state.get('dashboard_detail') != 'vehicules' else None
     with col2:
-        st.metric("🔑 En sortie", nb_en_sortie)
+        st.metric("🔑 Distribué", nb_en_sortie)
         if st.button("📋 Détails", key="btn_en_sortie", use_container_width=True):
             st.session_state['dashboard_detail'] = 'en_sortie' if st.session_state.get('dashboard_detail') != 'en_sortie' else None
     with col3:
@@ -641,14 +641,14 @@ if page == "📊 Dashboard":
         if vehicules:
             for v in vehicules:
                 immat = v.get('immatriculation', '')
-                # Statut : en sortie ou disponible
+                # Statut : distribué ou disponible
                 en_sortie = any(a.get('immatriculation') == immat and not a.get('retourne') for a in attributions)
                 en_interv = any(i.get('immatriculation') == immat and i.get('statut') == "En cours" for i in interventions)
                 if en_interv:
                     statut = "🔧 En intervention"
                     couleur = "#f59e0b"
                 elif en_sortie:
-                    statut = "🔑 En sortie"
+                    statut = "🔑 Distribué"
                     couleur = "#ef4444"
                 else:
                     statut = "✅ Disponible"
@@ -663,7 +663,7 @@ if page == "📊 Dashboard":
 
     elif detail == 'en_sortie':
         st.markdown("---")
-        st.markdown("### 🔑 Véhicules en sortie")
+        st.markdown("### 🔑 Véhicules distribués")
         if sorties_en_cours:
             for a in sorties_en_cours:
                 immat = a.get('immatriculation', '')
@@ -676,7 +676,7 @@ if page == "📊 Dashboard":
                     <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>📆 Retour prévu : {a.get('date_retour_prevue','N/A')}</span>
                 </div>""", unsafe_allow_html=True)
         else:
-            st.info("Aucun véhicule en sortie actuellement")
+            st.info("Aucun véhicule distribué actuellement")
 
     elif detail == 'engins':
         st.markdown("---")
@@ -690,7 +690,7 @@ if page == "📊 Dashboard":
                     statut = "🔧 En intervention"
                     couleur = "#f59e0b"
                 elif en_sortie:
-                    statut = "🔑 En sortie"
+                    statut = "🔑 Distribué"
                     couleur = "#ef4444"
                 else:
                     statut = "✅ Disponible"
@@ -817,7 +817,7 @@ if page == "📊 Dashboard":
             st.success(f"✅ Retourné !")
             st.rerun()
     else:
-        st.info("Aucun véhicule en sortie")
+        st.info("Aucun véhicule distribué")
 
 elif page == "➕ Saisir un véhicule":
     st.markdown("# ➕ Nouveau Véhicule")
@@ -1044,7 +1044,7 @@ elif page == "🔧 Attribuer un engin":
             st.success(f"✅ Retourné !")
             st.rerun()
     else:
-        st.info("Aucun engin en sortie")
+        st.info("Aucun engin distribué")
     
     st.markdown("---")
     st.markdown("### 📜 Historique")
