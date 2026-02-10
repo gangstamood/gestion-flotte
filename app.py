@@ -163,56 +163,63 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Bouton hamburger personnalisé + forcer sidebar ouverte via JavaScript
+# Bouton hamburger personnalisé + toggle sidebar via manipulation CSS directe
 components.html("""
 <script>
 (function() {
     var doc = window.parent.document;
+    var sidebarOpen = true;
 
-    // Forcer la sidebar ouverte au chargement
-    function openSidebar() {
+    function setSidebarState(open) {
         var sidebar = doc.querySelector('[data-testid="stSidebar"]');
-        if (sidebar) {
+        if (!sidebar) return;
+        sidebarOpen = open;
+        if (open) {
             sidebar.setAttribute('aria-expanded', 'true');
+            sidebar.style.setProperty('transform', 'none', 'important');
+            sidebar.style.setProperty('width', '300px', 'important');
+            sidebar.style.setProperty('min-width', '300px', 'important');
+            sidebar.style.setProperty('visibility', 'visible', 'important');
+            sidebar.style.setProperty('position', 'relative', 'important');
+        } else {
+            sidebar.setAttribute('aria-expanded', 'false');
+            sidebar.style.setProperty('transform', 'translateX(-300px)', 'important');
+            sidebar.style.setProperty('width', '0px', 'important');
+            sidebar.style.setProperty('min-width', '0px', 'important');
+            sidebar.style.setProperty('visibility', 'hidden', 'important');
+            sidebar.style.setProperty('position', 'fixed', 'important');
         }
-        var collapsed = doc.querySelector('[data-testid="collapsedControl"]');
-        if (collapsed) {
-            collapsed.click();
-        }
+        // Mettre à jour l'icône du bouton
+        var btn = doc.getElementById('custom-hamburger');
+        if (btn) btn.innerHTML = open ? '&#10005;' : '&#9776;';
     }
 
-    // Créer le bouton hamburger flottant
     function createHamburger() {
         if (doc.getElementById('custom-hamburger')) return;
-
         var btn = doc.createElement('button');
         btn.id = 'custom-hamburger';
-        btn.innerHTML = '&#9776;';
-        btn.style.cssText = 'position:fixed;top:14px;left:14px;z-index:999999;background:#1a1a2e;color:white;border:1px solid rgba(255,255,255,0.2);border-radius:8px;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.3);transition:all 0.2s;';
-
+        btn.innerHTML = '&#10005;';
+        btn.style.cssText = 'position:fixed;top:14px;left:14px;z-index:999999;background:#1a1a2e;color:white;border:1px solid rgba(255,255,255,0.2);border-radius:8px;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.3);transition:all 0.2s;pointer-events:auto;';
         btn.onmouseover = function() { btn.style.background = '#2a2a4e'; };
         btn.onmouseout = function() { btn.style.background = '#1a1a2e'; };
-
-        btn.onclick = function() {
-            var sidebar = doc.querySelector('[data-testid="stSidebar"]');
-            if (!sidebar) return;
-            var expanded = sidebar.getAttribute('aria-expanded') === 'true';
-            if (expanded) {
-                sidebar.setAttribute('aria-expanded', 'false');
-            } else {
-                sidebar.setAttribute('aria-expanded', 'true');
-            }
+        btn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setSidebarState(!sidebarOpen);
         };
-
         doc.body.appendChild(btn);
     }
 
-    // Exécuter au chargement et avec un délai pour laisser Streamlit se charger
-    openSidebar();
-    createHamburger();
-    setTimeout(function() { openSidebar(); createHamburger(); }, 500);
-    setTimeout(function() { openSidebar(); createHamburger(); }, 1500);
-    setTimeout(function() { openSidebar(); createHamburger(); }, 3000);
+    // Forcer sidebar ouverte + créer bouton
+    function init() {
+        createHamburger();
+        setSidebarState(true);
+    }
+
+    init();
+    setTimeout(init, 300);
+    setTimeout(init, 1000);
+    setTimeout(init, 2500);
 })();
 </script>
 """, height=0)
