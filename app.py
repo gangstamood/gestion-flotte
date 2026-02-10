@@ -23,21 +23,7 @@ st.markdown("""
     
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header[data-testid="stHeader"] {background: transparent !important;}
     [data-testid="stToolbar"] {display: none !important;}
-    [data-testid="collapsedControl"] {
-        background: rgba(30, 30, 50, 0.95) !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        border-radius: 8px !important;
-        color: #ffffff !important;
-    }
-    [data-testid="collapsedControl"] button {
-        color: #ffffff !important;
-    }
-    [data-testid="collapsedControl"] svg {
-        fill: #ffffff !important;
-        stroke: #ffffff !important;
-    }
     
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
