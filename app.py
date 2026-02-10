@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 from datetime import datetime, timedelta
 from google.oauth2 import service_account
@@ -23,27 +24,8 @@ st.markdown("""
     
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    [data-testid="stHeader"] {background: transparent !important; border: none !important; box-shadow: none !important;}
-    [data-testid="stToolbar"] {display: none !important;}
-    [data-testid="stDecoration"] {display: none !important;}
-    [data-testid="stStatusWidget"] {display: none !important;}
-    .stDeployButton, .stAppDeployButton, [data-testid="manage-app-button"] {display: none !important;}
-    iframe[title="streamlit_cloud"] {display: none !important;}
-    .viewerBadge_container__r5tak, ._profileContainer_gzau3_53, ._profilePreview_gzau3_63 {display: none !important;}
-    [data-testid="manage-app-button"], [data-testid="baseButton-header"] {display: none !important;}
-    section[data-testid="stBottomBlockContainer"] ~ div {display: none !important;}
-    [data-testid="collapsedControl"] {
-        display: flex !important;
-        visibility: visible !important;
-        position: fixed !important;
-        top: 0.75rem !important;
-        left: 0.75rem !important;
-        z-index: 999999 !important;
-        background: rgba(30, 30, 50, 0.9) !important;
-        border-radius: 8px !important;
-        padding: 0.25rem !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-    }
+    header[data-testid="stHeader"] {display: none !important;}
+    [data-testid="collapsedControl"] {display: none !important;}
     
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
@@ -179,6 +161,56 @@ st.markdown("""
     ::-webkit-scrollbar-thumb { background: #3a3a5e; border-radius: 4px; }
 </style>
 """, unsafe_allow_html=True)
+
+# BOUTON HAMBURGER POUR TOGGLE SIDEBAR
+components.html("""
+<style>
+    #custom-sidebar-toggle {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 999999;
+        background: rgba(30, 30, 50, 0.95);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 22px;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        line-height: 1;
+    }
+    #custom-sidebar-toggle:hover {
+        background: rgba(99, 102, 241, 0.3);
+        border-color: rgba(99, 102, 241, 0.5);
+    }
+</style>
+<button id="custom-sidebar-toggle" onclick="toggleSidebar()">☰</button>
+<script>
+function toggleSidebar() {
+    const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+    const btn = window.parent.document.querySelector('[data-testid="collapsedControl"] button');
+    if (btn) {
+        btn.click();
+    } else if (sidebar) {
+        const isHidden = sidebar.getAttribute('aria-expanded') === 'false' ||
+                         sidebar.style.display === 'none' ||
+                         sidebar.classList.contains('--collapsed');
+        if (isHidden) {
+            sidebar.setAttribute('aria-expanded', 'true');
+            sidebar.style.marginLeft = '0px';
+        } else {
+            sidebar.setAttribute('aria-expanded', 'false');
+            sidebar.style.marginLeft = '-300px';
+        }
+    }
+}
+</script>
+""", height=0)
 
 # AUTHENTIFICATION PAR MOT DE PASSE
 def check_password():
