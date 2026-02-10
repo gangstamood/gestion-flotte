@@ -5,7 +5,6 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
 import io
 
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide")
@@ -209,10 +208,13 @@ def read_sheet(sheet_name):
             return []
         headers = values[0]
         return [dict(zip(headers, row + [''] * (len(headers) - len(row)))) for row in values[1:]]
-    except:
+    except Exception:
         return []
 
 def write_sheet(sheet_name, data):
+    sheets_service.spreadsheets().values().clear(
+        spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A:Z"
+    ).execute()
     if not data:
         return
     headers = list(data[0].keys())
@@ -233,7 +235,7 @@ def init_database():
                     spreadsheetId=SPREADSHEET_ID,
                     body={"requests": [{"addSheet": {"properties": {"title": sheet_name}}}]}
                 ).execute()
-    except:
+    except Exception:
         pass
 
 init_database()
@@ -262,9 +264,10 @@ def add_attribution(immat, service, date, heure, date_retour_prevue):
 
 def retourner_vehicule(immat):
     attributions = get_attributions()
-    for attr in attributions:
+    for attr in reversed(attributions):
         if attr.get('immatriculation') == immat and not attr.get('retourne'):
             attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+            break
     write_sheet('attributions', attributions)
 
 def get_categories():
@@ -349,9 +352,10 @@ def add_attribution_engin(num_serie, service, date, heure):
 
 def retourner_engin(num_serie):
     attributions = get_attributions_engins()
-    for attr in attributions:
+    for attr in reversed(attributions):
         if attr.get('numero_serie') == num_serie and not attr.get('retourne'):
             attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+            break
     write_sheet('attributions_engins', attributions)
 
 def get_categories_engins():
@@ -388,7 +392,7 @@ def verifier_alertes_engins(attributions):
             duree = datetime.now() - date_attrib
             if duree > timedelta(hours=8):
                 alertes.append({'numero_serie': attr['numero_serie'], 'service': attr['service'], 'duree_heures': int(duree.total_seconds() / 3600)})
-        except:
+        except Exception:
             continue
     return alertes
 
@@ -399,7 +403,7 @@ def generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None):
     if logo_url:
         try:
             c.drawImage(logo_url, 50, height - 100, width=100, height=80, preserveAspectRatio=True)
-        except:
+        except Exception:
             pass
     c.setFont("Helvetica-Bold", 24)
     c.drawCentredString(width/2, height - 120, "BON DE CARBURANT")
@@ -509,12 +513,12 @@ if page == "📊 Dashboard":
     col1.metric("🚙 Véhicules", len(vehicules))
     col2.metric("🔑 En sortie", len([a for a in attributions if not a.get('retourne')]))
     col3.metric("🚜 Engins", len(engins))
-    col4.metric("🔨 Interventions", len([i for i in interventions if i['statut'] == "En cours"]) + len([i for i in interventions_engins if i['statut'] == "En cours"]))
+    col4.metric("🔨 Interventions", len([i for i in interventions if i.get('statut') == "En cours"]) + len([i for i in interventions_engins if i.get('statut') == "En cours"]))
     
     st.markdown("---")
     st.markdown("### 🔍 Filtres")
     col_f1, col_f2 = st.columns(2)
-    types_dispo = ["Tous"] + sorted(list(set([v['type'] for v in vehicules]))) if vehicules else ["Tous"]
+    types_dispo = (["Tous"] + sorted(set(v['type'] for v in vehicules))) if vehicules else ["Tous"]
     filtre_type = col_f1.selectbox("Type", types_dispo)
     filtre_service = col_f2.selectbox("Service", ["Tous"] + services)
     
@@ -615,7 +619,7 @@ elif page == "📥 Importer des véhicules":
                 st.success(f"✅ {count} véhicule(s) importé(s) !")
                 st.rerun()
         except Exception as e:
-            st.error(f"❌ Erreur : {e}")
+            st.error("❌ Erreur lors de l'import. Vérifiez que le fichier contient les colonnes : immatriculation, type, marque")
 
 elif page == "🔧 Attribuer un véhicule":
     st.markdown("# 🔧 Attribution")
@@ -660,7 +664,7 @@ elif page == "⛽ Bons de Carburant":
             if st.form_submit_button("✅ Générer", type="primary"):
                 if conducteur_nom and conducteur_prenom and num_carte:
                     num_bon = f"BC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-                    bon = {"numero_bon": num_bon, "immatriculation": vh_sel.split(" - ")[0], "service": service_bon, "date": date_bon.strftime("%d/%m/%Y"), "numero_carte": num_carte, "conducteur_nom": conducteur_nom, "conducteur_prenom": conducteur_prenom, "type_carburant": "", "volume": 0.0, "montant": 0.0, "notes": notes, "statut": "Non saisi"}
+                    bon = {"numero_bon": num_bon, "immatriculation": vh_sel.split(" - ")[0], "service": service_bon, "date": date_bon.strftime("%d/%m/%Y"), "numero_carte": num_carte, "conducteur_nom": conducteur_nom, "conducteur_prenom": conducteur_prenom, "type_carburant": "", "volume": "", "montant": "", "notes": notes, "statut": "Non saisi"}
                     add_bon_carburant(bon)
                     st.session_state.dernier_bon = {'bon': bon, 'conducteur_nom': conducteur_nom, 'conducteur_prenom': conducteur_prenom, 'logo_url': logo_url}
                     st.success(f"✅ Bon {num_bon} généré !")
@@ -683,7 +687,7 @@ elif page == "⛽ Bons de Carburant":
     
     st.markdown("---")
     st.markdown("### 📥 Saisir données retour")
-    non_saisis = [b for b in bons_carburant if b['statut'] == "Non saisi"]
+    non_saisis = [b for b in bons_carburant if b.get('statut') == "Non saisi"]
     if non_saisis:
         with st.form("form_saisie"):
             bon_sel = st.selectbox("Bon *", [f"{b['numero_bon']} - {b['immatriculation']}" for b in non_saisis])
@@ -711,28 +715,32 @@ elif page == "🔨 Pannes & Interventions":
     st.markdown("# 🔨 Interventions Véhicules")
     st.markdown("<p class='page-intro'>Déclarer et suivre les interventions</p>", unsafe_allow_html=True)
     st.markdown("### ➕ Déclarer")
-    with st.form("form_interv"):
-        col1, col2 = st.columns(2)
-        vh_sel = col1.selectbox("Véhicule *", [f"{v['immatriculation']} - {v['type']} {v['marque']}" for v in vehicules]) if vehicules else None
-        type_i = col2.selectbox("Type *", ["Panne", "Entretien", "Réparation", "Contrôle", "Autre"])
-        col3, col4 = st.columns(2)
-        date_i = col3.date_input("Date *", value=datetime.now())
-        heure_i = col4.time_input("Heure *", value=datetime.now().time())
-        comm = st.text_area("Commentaire *", height=100)
-        statut = st.selectbox("Statut", ["En cours", "Terminée", "En attente"])
-        if st.form_submit_button("✅ Enregistrer", type="primary"):
-            if vh_sel and comm:
-                add_intervention(vh_sel.split(" - ")[0], type_i, date_i.strftime("%d/%m/%Y"), heure_i.strftime("%H:%M"), comm, statut)
-                st.success("✅ Enregistré !")
-                st.rerun()
+    if vehicules:
+        with st.form("form_interv"):
+            col1, col2 = st.columns(2)
+            vh_sel = col1.selectbox("Véhicule *", [f"{v['immatriculation']} - {v['type']} {v['marque']}" for v in vehicules])
+            type_i = col2.selectbox("Type *", ["Panne", "Entretien", "Réparation", "Contrôle", "Autre"])
+            col3, col4 = st.columns(2)
+            date_i = col3.date_input("Date *", value=datetime.now())
+            heure_i = col4.time_input("Heure *", value=datetime.now().time())
+            comm = st.text_area("Commentaire *", height=100)
+            statut = st.selectbox("Statut", ["En cours", "Terminée", "En attente"])
+            if st.form_submit_button("✅ Enregistrer", type="primary"):
+                if comm:
+                    add_intervention(vh_sel.split(" - ")[0], type_i, date_i.strftime("%d/%m/%Y"), heure_i.strftime("%H:%M"), comm, statut)
+                    st.success("✅ Enregistré !")
+                    st.rerun()
+    else:
+        st.warning("⚠️ Aucun véhicule enregistré")
     st.markdown("---")
     st.markdown("### 📋 Historique")
     if interventions:
         for interv in interventions[:20]:
-            emoji = "🔴" if interv['statut'] == "En cours" else "✅" if interv['statut'] == "Terminée" else "⏸️"
-            with st.expander(f"{emoji} {interv['immatriculation']} - {interv['type']} - {interv['date']}"):
-                st.write(f"**Type:** {interv['type']} | **Statut:** {interv['statut']}")
-                st.info(interv['commentaire'])
+            statut = interv.get('statut', '')
+            emoji = "🔴" if statut == "En cours" else "✅" if statut == "Terminée" else "⏸️"
+            with st.expander(f"{emoji} {interv.get('immatriculation', '')} - {interv.get('type', '')} - {interv.get('date', '')}"):
+                st.write(f"**Type:** {interv.get('type', '')} | **Statut:** {statut}")
+                st.info(interv.get('commentaire', ''))
 
 elif page == "🚜 Saisir un engin":
     st.markdown("# 🚜 Nouvel Engin")
@@ -801,28 +809,32 @@ elif page == "🔨 Interventions Engins":
     st.markdown("# 🔨 Interventions Engins")
     st.markdown("<p class='page-intro'>Déclarer et suivre les interventions sur engins</p>", unsafe_allow_html=True)
     st.markdown("### ➕ Déclarer")
-    with st.form("form_interv_engin"):
-        col1, col2 = st.columns(2)
-        eng_sel = col1.selectbox("Engin *", [f"{e['numero_serie']} - {e['type']} {e['marque']}" for e in engins]) if engins else None
-        type_i = col2.selectbox("Type *", ["Panne", "Entretien", "Réparation", "Contrôle", "Autre"])
-        col3, col4 = st.columns(2)
-        date_i = col3.date_input("Date *", value=datetime.now())
-        heure_i = col4.time_input("Heure *", value=datetime.now().time())
-        comm = st.text_area("Commentaire *", height=100)
-        statut = st.selectbox("Statut", ["En cours", "Terminée", "En attente"])
-        if st.form_submit_button("✅ Enregistrer", type="primary"):
-            if eng_sel and comm:
-                add_intervention_engin(eng_sel.split(" - ")[0], type_i, date_i.strftime("%d/%m/%Y"), heure_i.strftime("%H:%M"), comm, statut)
-                st.success("✅ Enregistré !")
-                st.rerun()
+    if engins:
+        with st.form("form_interv_engin"):
+            col1, col2 = st.columns(2)
+            eng_sel = col1.selectbox("Engin *", [f"{e['numero_serie']} - {e['type']} {e['marque']}" for e in engins])
+            type_i = col2.selectbox("Type *", ["Panne", "Entretien", "Réparation", "Contrôle", "Autre"])
+            col3, col4 = st.columns(2)
+            date_i = col3.date_input("Date *", value=datetime.now())
+            heure_i = col4.time_input("Heure *", value=datetime.now().time())
+            comm = st.text_area("Commentaire *", height=100)
+            statut = st.selectbox("Statut", ["En cours", "Terminée", "En attente"])
+            if st.form_submit_button("✅ Enregistrer", type="primary"):
+                if comm:
+                    add_intervention_engin(eng_sel.split(" - ")[0], type_i, date_i.strftime("%d/%m/%Y"), heure_i.strftime("%H:%M"), comm, statut)
+                    st.success("✅ Enregistré !")
+                    st.rerun()
+    else:
+        st.warning("⚠️ Aucun engin enregistré")
     st.markdown("---")
     st.markdown("### 📋 Historique")
     if interventions_engins:
         for interv in interventions_engins[:20]:
-            emoji = "🔴" if interv['statut'] == "En cours" else "✅" if interv['statut'] == "Terminée" else "⏸️"
-            with st.expander(f"{emoji} {interv['numero_serie']} - {interv['type']} - {interv['date']}"):
-                st.write(f"**Type:** {interv['type']} | **Statut:** {interv['statut']}")
-                st.info(interv['commentaire'])
+            statut = interv.get('statut', '')
+            emoji = "🔴" if statut == "En cours" else "✅" if statut == "Terminée" else "⏸️"
+            with st.expander(f"{emoji} {interv.get('numero_serie', '')} - {interv.get('type', '')} - {interv.get('date', '')}"):
+                st.write(f"**Type:** {interv.get('type', '')} | **Statut:** {statut}")
+                st.info(interv.get('commentaire', ''))
     else:
         st.info("Aucune intervention enregistrée")
 
