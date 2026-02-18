@@ -208,7 +208,6 @@ spreadsheet_id = "..."
 |------|---------|---------|
 | Dashboard | 📊 Dashboard | Boutons liens Excel (si configurés), métriques, détails par type, sorties/retours du jour, retourner véhicule/scooter/engin |
 | Saisir véhicule | ➕ Saisir un véhicule | Formulaire ajout + liste avec suppression |
-| Importer | 📥 Importer des véhicules | Upload CSV/Excel |
 | Attribuer véhicule | 🔧 Attribuer un véhicule | Formulaire + historique éditable |
 | Bons carburant | ⛽ Bons de Carburant | Générer bon PDF + saisie retour |
 | Interventions VH | 🔨 Pannes & Interventions | Déclarer + historique |
@@ -229,7 +228,6 @@ spreadsheet_id = "..."
 ├── 📊 Dashboard (bouton principal)
 ├── 🚗 Véhicules (expander)
 │   ├── Saisir un véhicule
-│   ├── Importer des véhicules
 │   ├── Attribuer un véhicule
 │   ├── Bons de Carburant
 │   └── Pannes & Interventions

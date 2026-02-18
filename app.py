@@ -540,7 +540,7 @@ with st.sidebar:
         st.session_state.page = p
 
     vehicule_pages = [
-        "➕ Saisir un véhicule", "📥 Importer des véhicules",
+        "➕ Saisir un véhicule",
         "🔧 Attribuer un véhicule", "⛽ Bons de Carburant",
         "🔨 Pannes & Interventions"
     ]
@@ -1002,26 +1002,6 @@ elif page == "➕ Saisir un véhicule":
             if col2.button("🗑️", key=f"del_{vh['immatriculation']}"):
                 delete_vehicule(vh['immatriculation'])
                 st.rerun()
-
-elif page == "📥 Importer des véhicules":
-    st.markdown("# 📥 Importer des véhicules")
-    st.markdown("<p class='page-intro'>Importez depuis un fichier CSV ou Excel</p>", unsafe_allow_html=True)
-    st.info("💡 Colonnes requises : immatriculation, type, marque")
-    uploaded_file = st.file_uploader("Choisir un fichier", type=['csv', 'xlsx'])
-    if uploaded_file:
-        try:
-            df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
-            st.dataframe(df, use_container_width=True, hide_index=True)
-            if st.button("✅ Importer", type="primary"):
-                count = 0
-                for _, row in df.iterrows():
-                    if 'immatriculation' in row and 'type' in row and 'marque' in row:
-                        add_vehicule(str(row['immatriculation']), str(row['type']), str(row['marque']))
-                        count += 1
-                st.success(f"✅ {count} véhicule(s) importé(s) !")
-                st.rerun()
-        except Exception as e:
-            st.error("❌ Erreur lors de l'import. Vérifiez que le fichier contient les colonnes : immatriculation, type, marque")
 
 elif page == "🔧 Attribuer un véhicule":
     st.markdown("# 🔧 Attribution")
