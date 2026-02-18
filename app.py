@@ -311,6 +311,10 @@ def update_bon_carburant(numero_bon, type_carb, volume, montant):
             bon['statut'] = 'Saisi'
     write_sheet('carburant', bons)
 
+def delete_bon_carburant(numero_bon):
+    bons = [b for b in get_carburant() if b.get('numero_bon') != numero_bon]
+    write_sheet('carburant', bons)
+
 # FONCTIONS CRUD LIENS
 def get_liens():
     return read_sheet('liens')
@@ -1132,10 +1136,27 @@ elif page == "⛽ Bons de Carburant":
     st.markdown("---")
     st.markdown("### 📋 Historique")
     if bons_carburant:
-        bons_df = pd.DataFrame(bons_carburant)
-        bons_df['volume'] = pd.to_numeric(bons_df['volume'], errors='coerce').fillna(0)
-        bons_df['montant'] = pd.to_numeric(bons_df['montant'], errors='coerce').fillna(0)
-        st.dataframe(bons_df, use_container_width=True, hide_index=True)
+        h = st.columns([2, 1.5, 1, 1.2, 0.8, 0.9, 1, 0.5])
+        for col, label in zip(h, ["N° Bon", "Véhicule", "Date", "Carburant", "Vol. (L)", "Montant (€)", "Statut", ""]):
+            col.markdown(f"<small><b>{label}</b></small>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin: 0.25rem 0 0.5rem 0'>", unsafe_allow_html=True)
+        for bon in reversed(bons_carburant):
+            num = bon.get('numero_bon', '')
+            statut = bon.get('statut', '')
+            statut_color = '#ef4444' if statut == 'Non saisi' else '#10b981'
+            c = st.columns([2, 1.5, 1, 1.2, 0.8, 0.9, 1, 0.5])
+            c[0].markdown(f"<small>{num}</small>", unsafe_allow_html=True)
+            c[1].markdown(f"<small>{bon.get('immatriculation', '')}</small>", unsafe_allow_html=True)
+            c[2].markdown(f"<small>{bon.get('date', '')}</small>", unsafe_allow_html=True)
+            c[3].markdown(f"<small>{bon.get('type_carburant', '-')}</small>", unsafe_allow_html=True)
+            c[4].markdown(f"<small>{bon.get('volume', '-')}</small>", unsafe_allow_html=True)
+            c[5].markdown(f"<small>{bon.get('montant', '-')}</small>", unsafe_allow_html=True)
+            c[6].markdown(f"<small style='color:{statut_color}'>{statut}</small>", unsafe_allow_html=True)
+            if c[7].button("🗑️", key=f"del_bon_{num}"):
+                delete_bon_carburant(num)
+                st.rerun()
+    else:
+        st.info("Aucun bon enregistré")
 
 elif page == "🔨 Pannes & Interventions":
     st.markdown("# 🔨 Interventions Véhicules")

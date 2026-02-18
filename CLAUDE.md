@@ -187,7 +187,7 @@ spreadsheet_id = "..."
 - `get_interventions_scooters()` / `add_intervention_scooter(immat, ...)`
 
 ### Carburant
-- `get_carburant()` / `add_bon_carburant(bon)` / `update_bon_carburant(numero_bon, type_carb, volume, montant)`
+- `get_carburant()` / `add_bon_carburant(bon)` / `update_bon_carburant(numero_bon, type_carb, volume, montant)` / `delete_bon_carburant(numero_bon)`
 
 ### Liens
 - `get_liens()` / `add_lien(nom, url)` — anti-doublon sur `nom` / `delete_lien(nom)`
