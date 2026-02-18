@@ -172,7 +172,7 @@ def init_database():
     try:
         sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
         existing_sheets = [s['properties']['title'] for s in sheet_metadata['sheets']]
-        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters']
+        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters', 'liens']
         for sheet_name in required_sheets:
             if sheet_name not in existing_sheets:
                 sheets_service.spreadsheets().batchUpdate(
@@ -189,7 +189,7 @@ ALL_SHEET_NAMES = [
     'vehicules', 'attributions', 'categories', 'services', 'interventions',
     'carburant', 'engins', 'attributions_engins', 'categories_engins',
     'interventions_engins', 'scooters', 'attributions_scooters',
-    'categories_scooters', 'interventions_scooters'
+    'categories_scooters', 'interventions_scooters', 'liens'
 ]
 
 @st.cache_data(ttl=60, show_spinner="Chargement des données...")
@@ -310,6 +310,20 @@ def update_bon_carburant(numero_bon, type_carb, volume, montant):
             bon['montant'] = str(montant)
             bon['statut'] = 'Saisi'
     write_sheet('carburant', bons)
+
+# FONCTIONS CRUD LIENS
+def get_liens():
+    return read_sheet('liens')
+
+def add_lien(nom, url):
+    liens = get_liens()
+    if not any(l.get('nom') == nom for l in liens):
+        liens.append({'nom': nom, 'url': url})
+        write_sheet('liens', liens)
+
+def delete_lien(nom):
+    liens = [l for l in get_liens() if l.get('nom') != nom]
+    write_sheet('liens', liens)
 
 # FONCTIONS CRUD ENGINS
 def get_engins():
@@ -507,6 +521,7 @@ attributions_scooters = _all.get('attributions_scooters', [])
 _cats_s = _all.get('categories_scooters', [])
 categories_scooters = [c.get('nom', '') for c in _cats_s if c.get('nom')] or get_categories_scooters()
 interventions_scooters = _all.get('interventions_scooters', [])
+liens = _all.get('liens', [])
 
 # SIDEBAR
 with st.sidebar:
@@ -609,6 +624,14 @@ with st.sidebar:
 if page == "📊 Dashboard":
     st.markdown("# 📊 Tableau de Bord")
     st.markdown("<p class='page-intro'>Vue d'ensemble de votre flotte</p>", unsafe_allow_html=True)
+
+    if liens:
+        st.markdown("### 📎 Tableaux de bord")
+        cols = st.columns(min(len(liens), 4))
+        for i, lien in enumerate(liens):
+            with cols[i % 4]:
+                st.link_button(f"📄 {lien.get('nom', '')}", lien.get('url', ''), use_container_width=True)
+        st.markdown("---")
 
     # Calculs pour les métriques
     nb_vehicules = len(vehicules)
@@ -1456,3 +1479,26 @@ elif page == "⚙️ Paramètres":
             if nv_cat_sco:
                 add_category_scooter(nv_cat_sco)
                 st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 📎 Liens Tableaux Excel")
+    st.markdown(f"<p class='page-intro'>Ces liens apparaissent comme boutons cliquables sur le Dashboard.</p>", unsafe_allow_html=True)
+    col_liens = st.columns(2)[0]
+    with col_liens:
+        for lien in liens:
+            c1, c2, c3 = st.columns([3, 2, 1])
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{lien.get('nom', '')}</div>", unsafe_allow_html=True)
+            c2.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['intro_color']}; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;'>{lien.get('url', '')}</div>", unsafe_allow_html=True)
+            if c3.button("🗑️", key=f"dl_{lien.get('nom', '')}"):
+                delete_lien(lien.get('nom', ''))
+                st.rerun()
+        with st.form("form_add_lien"):
+            c1, c2, c3 = st.columns([2, 3, 1])
+            nv_nom = c1.text_input("Nom *", label_visibility="collapsed", placeholder="Ex : Véhicules 2024")
+            nv_url = c2.text_input("URL *", label_visibility="collapsed", placeholder="https://...")
+            if c3.form_submit_button("➕", type="primary"):
+                if nv_nom and nv_url:
+                    add_lien(nv_nom, nv_url)
+                    st.rerun()
+                else:
+                    st.error("❌ Nom et URL requis")
