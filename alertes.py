@@ -35,22 +35,37 @@ def verifier_alertes_scooters(attributions):
 
 
 def verifier_alertes_engins(attributions):
-    """Engins en location depuis plus de 8 heures."""
+    """Engins dont la date de fin de période est dépassée et non retournés."""
     alertes = []
+    today = datetime.now().date()
     for attr in attributions:
         if attr.get('retourne'):
             continue
         try:
-            date_attrib = datetime.strptime(
-                f"{attr['date']} {attr['heure']}", "%d/%m/%Y %H:%M"
-            )
-            duree = datetime.now() - date_attrib
-            if duree > timedelta(hours=8):
-                alertes.append({
-                    'numero_serie': attr['numero_serie'],
-                    'service': attr['service'],
-                    'duree_heures': int(duree.total_seconds() / 3600),
-                })
+            date_fin_str = attr.get('date_fin', '')
+            if date_fin_str:
+                date_fin = datetime.strptime(date_fin_str, "%d/%m/%Y").date()
+                if date_fin < today:
+                    jours_retard = (today - date_fin).days
+                    alertes.append({
+                        'numero_serie': attr['numero_serie'],
+                        'service': attr['service'],
+                        'date_fin': date_fin_str,
+                        'jours_retard': jours_retard,
+                    })
+            else:
+                # Rétrocompat : anciennes attributions sans date_fin
+                date_attrib = datetime.strptime(
+                    f"{attr['date']} {attr.get('heure', '00:00')}", "%d/%m/%Y %H:%M"
+                )
+                duree = datetime.now() - date_attrib
+                if duree > timedelta(hours=8):
+                    alertes.append({
+                        'numero_serie': attr['numero_serie'],
+                        'service': attr['service'],
+                        'date_fin': attr['date'],
+                        'jours_retard': 0,
+                    })
         except Exception:
             continue
     return alertes
