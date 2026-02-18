@@ -8,7 +8,9 @@
 - **Data** : Pandas pour import/export CSV/Excel
 
 ## Fichiers
-- `app.py` — Application complète (~1720 lignes)
+- `app.py` — Application principale (~1600 lignes)
+- `styles.py` — Fonction `get_css(t)` : tout le CSS injecté via `st.markdown()`
+- `alertes.py` — Fonctions `verifier_alertes()`, `verifier_alertes_scooters()`, `verifier_alertes_engins()`
 - `.streamlit/config.toml` — Config Streamlit
 - `requirements.txt` — Dépendances Python
 
@@ -31,24 +33,23 @@ spreadsheet_id = "..."
 
 | Section | Lignes approx. | Description |
 |---------|----------------|-------------|
-| Imports | 1-9 | streamlit, pandas, google, reportlab, io |
-| Config page | 11 | `st.set_page_config()` |
-| Thèmes | 13-152 | 4 thèmes (THEMES dict) |
-| CSS | 156-258 | `get_css(t)` avec responsive |
-| Hamburger JS | 260-342 | Menu mobile via `components.html()` |
-| Auth | 345-369 | `check_password()` |
-| Google Sheets | 372-452 | Connexion, read/write, init_database, batch loader |
-| CRUD Véhicules | 454-510 | get/add/delete vehicules, attributions, categories |
-| CRUD Services | 512-526 | get/add/delete services |
-| CRUD Interventions | 528-534 | Véhicules |
-| CRUD Carburant | 536-552 | Bons carburant |
-| CRUD Engins | 554-618 | get/add/delete engins + attributions + catégories |
-| CRUD Scooters | 620-684 | get/add/delete scooters + attributions + catégories |
-| Alertes | 686-774 | verifier_alertes (véhicules, engins, scooters) |
-| PDF | 716-758 | generer_pdf_bon() |
-| Chargement données | 777-795 | Batch load via _load_all_sheets() |
-| Sidebar | 798-892 | Navigation catégorisée + alertes |
-| Pages | 895-1720 | 13 pages de contenu |
+| Imports | 1-11 | streamlit, pandas, google, reportlab, io + styles, alertes |
+| Config page | 13 | `st.set_page_config()` |
+| Thèmes | 15-154 | 4 thèmes (THEMES dict) |
+| CSS | 156 | `st.markdown(get_css(t))` — défini dans `styles.py` |
+| Hamburger JS | 158-240 | Menu mobile via `components.html()` |
+| Auth | 243-267 | `check_password()` |
+| Google Sheets | 270-350 | Connexion, read/write, init_database, batch loader |
+| CRUD Véhicules | 352-410 | get/add/delete vehicules, attributions, categories |
+| CRUD Services | 412-426 | get/add/delete services |
+| CRUD Interventions | 428-434 | Véhicules |
+| CRUD Carburant | 436-452 | Bons carburant |
+| CRUD Engins | 454-518 | get/add/delete engins + attributions + catégories |
+| CRUD Scooters | 520-584 | get/add/delete scooters + attributions + catégories |
+| PDF | 586-628 | generer_pdf_bon() |
+| Chargement données | 630-648 | Batch load via _load_all_sheets() |
+| Sidebar | 650-744 | Navigation catégorisée + alertes (fonctions dans alertes.py) |
+| Pages | 747-1600 | 13 pages de contenu |
 
 ---
 
