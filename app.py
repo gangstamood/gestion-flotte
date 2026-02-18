@@ -184,6 +184,51 @@ def get_css(t):
     strong {{ color: {t['strong_color']}; }}
     .page-intro {{ color: {t['intro_color']}; font-size: 0.95rem; margin-bottom: 2rem; }}
     .sidebar-title {{ color: {t['sidebar_title']}; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }}
+    /* Sidebar nav buttons */
+    [data-testid="stSidebar"] .stButton > button {{
+        background: transparent !important;
+        color: {t['text_color']} !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.88rem !important;
+        font-weight: 500 !important;
+        text-align: left !important;
+        justify-content: flex-start !important;
+        box-shadow: none !important;
+        transition: background 0.2s !important;
+    }}
+    [data-testid="stSidebar"] .stButton > button:hover {{
+        background: {t['input_bg']} !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }}
+    [data-testid="stSidebar"] .stButton > button[kind="primary"] {{
+        background: {t['btn_bg']} !important;
+        color: white !important;
+        font-weight: 600 !important;
+    }}
+    [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {{
+        background: {t['btn_bg']} !important;
+        opacity: 0.9;
+    }}
+    [data-testid="stSidebar"] .stExpander {{
+        border: none !important;
+        background: transparent !important;
+        margin-bottom: 0.25rem;
+    }}
+    [data-testid="stSidebar"] .streamlit-expanderHeader {{
+        background: transparent !important;
+        border: none !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        padding: 0.5rem 0.25rem !important;
+        color: {t['h23_color']} !important;
+    }}
+    [data-testid="stSidebar"] .streamlit-expanderContent {{
+        padding: 0 0 0 0.5rem !important;
+        border: none !important;
+    }}
     ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
     ::-webkit-scrollbar-track {{ background: {t['scrollbar_track']}; }}
     ::-webkit-scrollbar-thumb {{ background: {t['scrollbar_thumb']}; border-radius: 4px; }}
@@ -684,14 +729,62 @@ with st.sidebar:
     st.markdown("<div class='sidebar-title'>🚗 Flotte</div>", unsafe_allow_html=True)
     st.markdown(f"<p style='color: {t['intro_color']}; font-size: 0.85rem; margin-bottom: 2rem;'>Gestion de véhicules</p>", unsafe_allow_html=True)
     
-    page = st.radio("Navigation", [
-        "📊 Dashboard", "📥 Importer des véhicules", "➕ Saisir un véhicule",
+    # Navigation par catégories
+    if 'page' not in st.session_state:
+        st.session_state.page = "📊 Dashboard"
+
+    def nav_to(p):
+        st.session_state.page = p
+
+    vehicule_pages = [
+        "➕ Saisir un véhicule", "📥 Importer des véhicules",
         "🔧 Attribuer un véhicule", "⛽ Bons de Carburant",
-        "🔨 Pannes & Interventions", 
-        "🛵 Saisir un scooter", "🔧 Attribuer un scooter", "🔨 Interventions Scooters",
-        "🚜 Saisir un engin", "🔧 Attribuer un engin", "🔨 Interventions Engins",
-        "⚙️ Paramètres"
-    ], label_visibility="collapsed")
+        "🔨 Pannes & Interventions"
+    ]
+    scooter_pages = [
+        "🛵 Saisir un scooter", "🔧 Attribuer un scooter",
+        "🔨 Interventions Scooters"
+    ]
+    engin_pages = [
+        "🚜 Saisir un engin", "🔧 Attribuer un engin",
+        "🔨 Interventions Engins"
+    ]
+
+    # Dashboard
+    st.button("📊 Dashboard", key="nav_dashboard", use_container_width=True,
+              type="primary" if st.session_state.page == "📊 Dashboard" else "secondary",
+              on_click=nav_to, args=("📊 Dashboard",))
+
+    # Véhicules
+    with st.expander("🚗 Véhicules", expanded=st.session_state.page in vehicule_pages):
+        for p in vehicule_pages:
+            label = p.split(" ", 1)[1] if " " in p else p
+            st.button(label, key=f"nav_{p}", use_container_width=True,
+                      type="primary" if st.session_state.page == p else "secondary",
+                      on_click=nav_to, args=(p,))
+
+    # Scooters
+    with st.expander("🛵 Scooters", expanded=st.session_state.page in scooter_pages):
+        for p in scooter_pages:
+            label = p.split(" ", 1)[1] if " " in p else p
+            st.button(label, key=f"nav_{p}", use_container_width=True,
+                      type="primary" if st.session_state.page == p else "secondary",
+                      on_click=nav_to, args=(p,))
+
+    # Engins
+    with st.expander("🚜 Engins", expanded=st.session_state.page in engin_pages):
+        for p in engin_pages:
+            label = p.split(" ", 1)[1] if " " in p else p
+            st.button(label, key=f"nav_{p}", use_container_width=True,
+                      type="primary" if st.session_state.page == p else "secondary",
+                      on_click=nav_to, args=(p,))
+
+    # Paramètres
+    st.button("⚙️ Paramètres", key="nav_params", use_container_width=True,
+              type="primary" if st.session_state.page == "⚙️ Paramètres" else "secondary",
+              on_click=nav_to, args=("⚙️ Paramètres",))
+
+    page = st.session_state.page
     
     st.markdown("---")
     alertes = verifier_alertes(attributions)
