@@ -102,9 +102,10 @@ spreadsheet_id = "..."
 |---------|-------------|
 | numero_serie | FK engins |
 | service | FK services |
-| date | Date sortie |
-| heure | Heure sortie |
-| retourne | Vide ou datetime retour |
+| date | Date de début (JJ/MM/AAAA) |
+| date_fin | Date de fin de la période (JJ/MM/AAAA) |
+| periode | Journée / Matin / Après-midi |
+| retourne | Vide ou datetime retour effectif (override date_fin) |
 
 ### categories / categories_engins / categories_scooters
 | Colonne | Défauts |
@@ -171,8 +172,9 @@ spreadsheet_id = "..."
 
 ### Engins
 - `get_engins()` / `add_engin()` / `delete_engin()`
-- `get_attributions_engins()` / `add_attribution_engin(num_serie, service, date, heure)`
-- `retourner_engin(num_serie)`
+- `_is_engin_active_today(attr)` — True si date_debut ≤ today ≤ date_fin et non retourné
+- `get_attributions_engins()` / `add_attribution_engin(num_serie, service, date_debut, date_fin, periode)`
+- `retourner_engin(num_serie)` — marque retourne avec datetime actuel
 - `update_attribution_engin(idx, data)` / `delete_attribution_engin(idx)`
 
 ### Catégories & Services
@@ -195,7 +197,7 @@ spreadsheet_id = "..."
 ### Alertes
 - `verifier_alertes(attributions)` — véhicules, retour <= 2 jours
 - `verifier_alertes_scooters(attributions)` — scooters, retour <= 2 jours
-- `verifier_alertes_engins(attributions)` — engins, > 8h de location
+- `verifier_alertes_engins(attributions)` — engins dont date_fin < today et non retournés (rétrocompat: >8h si pas de date_fin)
 
 ### PDF
 - `generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None)` → BytesIO
@@ -215,7 +217,7 @@ spreadsheet_id = "..."
 | Attribuer scooter | 🔧 Attribuer un scooter | Formulaire (avec casque) + historique éditable |
 | Interventions SCO | 🔨 Interventions Scooters | Déclarer + historique |
 | Saisir engin | 🚜 Saisir un engin | Formulaire ajout + liste |
-| Attribuer engin | 🔧 Attribuer un engin | Formulaire + retourner + historique éditable |
+| Attribuer engin | 🔧 Attribuer un engin | Planning semaine (grille HTML colorée par service, navigation ±semaine) + formulaire période (date_debut/date_fin/periode) + historique éditable |
 | Interventions ENG | 🔨 Interventions Engins | Déclarer + historique |
 | Paramètres | ⚙️ Paramètres | Thème + gestion catégories/services + gestion liens Excel (📎) |
 
