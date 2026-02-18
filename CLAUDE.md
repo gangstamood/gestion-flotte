@@ -8,7 +8,7 @@
 - **Data** : Pandas pour import/export CSV/Excel
 
 ## Fichiers
-- `app.py` — Application principale (~1450 lignes)
+- `app.py` — Application principale (~1510 lignes)
 - `styles.py` — `THEMES` dict (4 thèmes) + `get_css(t)` : tout le CSS injecté via `st.markdown()`
 - `alertes.py` — `verifier_alertes()`, `verifier_alertes_scooters()` (via `_verifier_alertes_date_retour()`), `verifier_alertes_engins()`
 - `.streamlit/config.toml` — Config Streamlit
@@ -53,7 +53,7 @@ spreadsheet_id = "..."
 
 ---
 
-## Data Model (14 feuilles Google Sheets)
+## Data Model (15 feuilles Google Sheets)
 
 ### vehicules
 | Colonne | Description |
@@ -143,6 +143,12 @@ spreadsheet_id = "..."
 | notes | Optionnel |
 | statut | Non saisi / Saisi |
 
+### liens
+| Colonne | Description |
+|---------|-------------|
+| nom | Libellé affiché sur le bouton du Dashboard |
+| url | URL complète vers le tableau Excel / Google Sheets |
+
 ---
 
 ## Fonctions CRUD complètes
@@ -183,6 +189,9 @@ spreadsheet_id = "..."
 ### Carburant
 - `get_carburant()` / `add_bon_carburant(bon)` / `update_bon_carburant(numero_bon, type_carb, volume, montant)`
 
+### Liens
+- `get_liens()` / `add_lien(nom, url)` — anti-doublon sur `nom` / `delete_lien(nom)`
+
 ### Alertes
 - `verifier_alertes(attributions)` — véhicules, retour <= 2 jours
 - `verifier_alertes_scooters(attributions)` — scooters, retour <= 2 jours
@@ -197,7 +206,7 @@ spreadsheet_id = "..."
 
 | Page | Clé nav | Contenu |
 |------|---------|---------|
-| Dashboard | 📊 Dashboard | Métriques, détails par type, sorties/retours du jour, retourner véhicule/scooter/engin |
+| Dashboard | 📊 Dashboard | Boutons liens Excel (si configurés), métriques, détails par type, sorties/retours du jour, retourner véhicule/scooter/engin |
 | Saisir véhicule | ➕ Saisir un véhicule | Formulaire ajout + liste avec suppression |
 | Importer | 📥 Importer des véhicules | Upload CSV/Excel |
 | Attribuer véhicule | 🔧 Attribuer un véhicule | Formulaire + historique éditable |
@@ -209,7 +218,7 @@ spreadsheet_id = "..."
 | Saisir engin | 🚜 Saisir un engin | Formulaire ajout + liste |
 | Attribuer engin | 🔧 Attribuer un engin | Formulaire + retourner + historique éditable |
 | Interventions ENG | 🔨 Interventions Engins | Déclarer + historique |
-| Paramètres | ⚙️ Paramètres | Thème + gestion catégories/services |
+| Paramètres | ⚙️ Paramètres | Thème + gestion catégories/services + gestion liens Excel (📎) |
 
 ---
 
