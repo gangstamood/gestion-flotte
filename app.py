@@ -481,6 +481,18 @@ def retourner_vehicule(immat):
             break
     write_sheet('attributions', attributions)
 
+def update_attribution(idx, data):
+    attributions = get_attributions()
+    if 0 <= idx < len(attributions):
+        attributions[idx].update(data)
+        write_sheet('attributions', attributions)
+
+def delete_attribution(idx):
+    attributions = get_attributions()
+    if 0 <= idx < len(attributions):
+        attributions.pop(idx)
+        write_sheet('attributions', attributions)
+
 def get_categories():
     cats = read_sheet('categories')
     if not cats:
@@ -569,6 +581,18 @@ def retourner_engin(num_serie):
             break
     write_sheet('attributions_engins', attributions)
 
+def update_attribution_engin(idx, data):
+    attributions = get_attributions_engins()
+    if 0 <= idx < len(attributions):
+        attributions[idx].update(data)
+        write_sheet('attributions_engins', attributions)
+
+def delete_attribution_engin(idx):
+    attributions = get_attributions_engins()
+    if 0 <= idx < len(attributions):
+        attributions.pop(idx)
+        write_sheet('attributions_engins', attributions)
+
 def get_categories_engins():
     cats = read_sheet('categories_engins')
     if not cats:
@@ -622,6 +646,18 @@ def retourner_scooter(immat):
             attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
             break
     write_sheet('attributions_scooters', attributions)
+
+def update_attribution_scooter(idx, data):
+    attributions = get_attributions_scooters()
+    if 0 <= idx < len(attributions):
+        attributions[idx].update(data)
+        write_sheet('attributions_scooters', attributions)
+
+def delete_attribution_scooter(idx):
+    attributions = get_attributions_scooters()
+    if 0 <= idx < len(attributions):
+        attributions.pop(idx)
+        write_sheet('attributions_scooters', attributions)
 
 def get_categories_scooters():
     cats = read_sheet('categories_scooters')
@@ -1246,7 +1282,32 @@ elif page == "🔧 Attribuer un véhicule":
     st.markdown("---")
     st.markdown("### 📜 Historique")
     if attributions:
-        st.dataframe(pd.DataFrame(attributions), use_container_width=True, hide_index=True)
+        for i, attr in enumerate(reversed(attributions)):
+            idx = len(attributions) - 1 - i
+            retourne_badge = "✅" if attr.get('retourne') else "🔑"
+            with st.expander(f"{retourne_badge} {attr.get('immatriculation', '')} → {attr.get('service', '')} ({attr.get('date', '')})"):
+                with st.form(f"edit_attr_vh_{idx}"):
+                    col1, col2 = st.columns(2)
+                    srv_val = attr.get('service', '')
+                    srv_idx = services.index(srv_val) if srv_val in services else 0
+                    new_srv = col1.selectbox("Service", services, index=srv_idx, key=f"srv_vh_{idx}")
+                    new_dr = col2.text_input("Date retour prévue", value=attr.get('date_retour_prevue', ''), key=f"dr_vh_{idx}")
+                    col3, col4 = st.columns(2)
+                    new_date = col3.text_input("Date sortie", value=attr.get('date', ''), key=f"ds_vh_{idx}")
+                    new_heure = col4.text_input("Heure", value=attr.get('heure', ''), key=f"hs_vh_{idx}")
+                    col_s, col_d = st.columns(2)
+                    saved = col_s.form_submit_button("💾 Enregistrer")
+                    deleted = col_d.form_submit_button("🗑️ Supprimer")
+                if saved:
+                    update_attribution(idx, {'service': new_srv, 'date_retour_prevue': new_dr, 'date': new_date, 'heure': new_heure})
+                    st.success("✅ Modifié !")
+                    st.rerun()
+                if deleted:
+                    delete_attribution(idx)
+                    st.success("✅ Supprimé !")
+                    st.rerun()
+    else:
+        st.info("Aucune attribution")
 
 elif page == "⛽ Bons de Carburant":
     st.markdown("# ⛽ Bons de Carburant")
@@ -1397,7 +1458,34 @@ elif page == "🔧 Attribuer un scooter":
     st.markdown("---")
     st.markdown("### 📜 Historique")
     if attributions_scooters:
-        st.dataframe(pd.DataFrame(attributions_scooters), use_container_width=True, hide_index=True)
+        for i, attr in enumerate(reversed(attributions_scooters)):
+            idx = len(attributions_scooters) - 1 - i
+            retourne_badge = "✅" if attr.get('retourne') else "🔑"
+            casque_txt = f" | 🪖 {attr.get('casque')}" if attr.get('casque') else ""
+            with st.expander(f"{retourne_badge} {attr.get('immatriculation', '')} → {attr.get('service', '')} ({attr.get('date', '')}){casque_txt}"):
+                with st.form(f"edit_attr_sco_{idx}"):
+                    col1, col2 = st.columns(2)
+                    srv_val = attr.get('service', '')
+                    srv_idx = services.index(srv_val) if srv_val in services else 0
+                    new_srv = col1.selectbox("Service", services, index=srv_idx, key=f"srv_sco_{idx}")
+                    new_dr = col2.text_input("Date retour prévue", value=attr.get('date_retour_prevue', ''), key=f"dr_sco_{idx}")
+                    col3, col4 = st.columns(2)
+                    new_date = col3.text_input("Date sortie", value=attr.get('date', ''), key=f"ds_sco_{idx}")
+                    new_heure = col4.text_input("Heure", value=attr.get('heure', ''), key=f"hs_sco_{idx}")
+                    new_casque = st.text_input("🪖 Casque", value=attr.get('casque', ''), key=f"cq_sco_{idx}")
+                    col_s, col_d = st.columns(2)
+                    saved = col_s.form_submit_button("💾 Enregistrer")
+                    deleted = col_d.form_submit_button("🗑️ Supprimer")
+                if saved:
+                    update_attribution_scooter(idx, {'service': new_srv, 'date_retour_prevue': new_dr, 'date': new_date, 'heure': new_heure, 'casque': new_casque})
+                    st.success("✅ Modifié !")
+                    st.rerun()
+                if deleted:
+                    delete_attribution_scooter(idx)
+                    st.success("✅ Supprimé !")
+                    st.rerun()
+    else:
+        st.info("Aucune attribution")
 
 elif page == "🔨 Interventions Scooters":
     st.markdown("# 🔨 Interventions Scooters")
@@ -1493,7 +1581,30 @@ elif page == "🔧 Attribuer un engin":
     st.markdown("---")
     st.markdown("### 📜 Historique")
     if attributions_engins:
-        st.dataframe(pd.DataFrame(attributions_engins), use_container_width=True, hide_index=True)
+        for i, attr in enumerate(reversed(attributions_engins)):
+            idx = len(attributions_engins) - 1 - i
+            retourne_badge = "✅" if attr.get('retourne') else "🔑"
+            with st.expander(f"{retourne_badge} {attr.get('numero_serie', '')} → {attr.get('service', '')} ({attr.get('date', '')})"):
+                with st.form(f"edit_attr_eng_{idx}"):
+                    col1, col2 = st.columns(2)
+                    srv_val = attr.get('service', '')
+                    srv_idx = services.index(srv_val) if srv_val in services else 0
+                    new_srv = col1.selectbox("Service", services, index=srv_idx, key=f"srv_eng_{idx}")
+                    new_date = col2.text_input("Date sortie", value=attr.get('date', ''), key=f"ds_eng_{idx}")
+                    new_heure = st.text_input("Heure", value=attr.get('heure', ''), key=f"hs_eng_{idx}")
+                    col_s, col_d = st.columns(2)
+                    saved = col_s.form_submit_button("💾 Enregistrer")
+                    deleted = col_d.form_submit_button("🗑️ Supprimer")
+                if saved:
+                    update_attribution_engin(idx, {'service': new_srv, 'date': new_date, 'heure': new_heure})
+                    st.success("✅ Modifié !")
+                    st.rerun()
+                if deleted:
+                    delete_attribution_engin(idx)
+                    st.success("✅ Supprimé !")
+                    st.rerun()
+    else:
+        st.info("Aucune attribution")
 
 elif page == "🔨 Interventions Engins":
     st.markdown("# 🔨 Interventions Engins")
