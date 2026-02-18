@@ -8,9 +8,9 @@
 - **Data** : Pandas pour import/export CSV/Excel
 
 ## Fichiers
-- `app.py` — Application principale (~1600 lignes)
-- `styles.py` — Fonction `get_css(t)` : tout le CSS injecté via `st.markdown()`
-- `alertes.py` — Fonctions `verifier_alertes()`, `verifier_alertes_scooters()`, `verifier_alertes_engins()`
+- `app.py` — Application principale (~1450 lignes)
+- `styles.py` — `THEMES` dict (4 thèmes) + `get_css(t)` : tout le CSS injecté via `st.markdown()`
+- `alertes.py` — `verifier_alertes()`, `verifier_alertes_scooters()` (via `_verifier_alertes_date_retour()`), `verifier_alertes_engins()`
 - `.streamlit/config.toml` — Config Streamlit
 - `requirements.txt` — Dépendances Python
 
@@ -33,23 +33,23 @@ spreadsheet_id = "..."
 
 | Section | Lignes approx. | Description |
 |---------|----------------|-------------|
-| Imports | 1-11 | streamlit, pandas, google, reportlab, io + styles, alertes |
+| Imports | 1-11 | streamlit, pandas, google, reportlab, io + `styles` (THEMES, get_css) + `alertes` |
 | Config page | 13 | `st.set_page_config()` |
-| Thèmes | 15-154 | 4 thèmes (THEMES dict) |
-| CSS | 156 | `st.markdown(get_css(t))` — défini dans `styles.py` |
-| Hamburger JS | 158-240 | Menu mobile via `components.html()` |
-| Auth | 243-267 | `check_password()` |
-| Google Sheets | 270-350 | Connexion, read/write, init_database, batch loader |
-| CRUD Véhicules | 352-410 | get/add/delete vehicules, attributions, categories |
-| CRUD Services | 412-426 | get/add/delete services |
-| CRUD Interventions | 428-434 | Véhicules |
-| CRUD Carburant | 436-452 | Bons carburant |
-| CRUD Engins | 454-518 | get/add/delete engins + attributions + catégories |
-| CRUD Scooters | 520-584 | get/add/delete scooters + attributions + catégories |
-| PDF | 586-628 | generer_pdf_bon() |
-| Chargement données | 630-648 | Batch load via _load_all_sheets() |
-| Sidebar | 650-744 | Navigation catégorisée + alertes (fonctions dans alertes.py) |
-| Pages | 747-1600 | 13 pages de contenu |
+| Thème actif | 15-18 | Init `session_state.theme` + `t = THEMES[...]` (THEMES défini dans `styles.py`) |
+| CSS | 20 | `st.markdown(get_css(t))` — défini dans `styles.py` |
+| Hamburger JS | 22-104 | Menu mobile via `components.html()` |
+| Auth | 107-131 | `check_password()` avec `show_login()` interne |
+| Google Sheets | 134-214 | Connexion, read/write, `@st.cache_resource init_database()`, batch loader |
+| CRUD Véhicules | 216-274 | get/add/delete vehicules, attributions, categories |
+| CRUD Services | 276-290 | get/add/delete services |
+| CRUD Interventions | 292-298 | Véhicules |
+| CRUD Carburant | 300-316 | Bons carburant |
+| CRUD Engins | 318-382 | get/add/delete engins + attributions + catégories |
+| CRUD Scooters | 384-448 | get/add/delete scooters + attributions + catégories |
+| PDF | 450-492 | generer_pdf_bon() |
+| Chargement données | 494-512 | Batch load via _load_all_sheets() |
+| Sidebar | 514-608 | Navigation catégorisée + alertes (fonctions dans alertes.py) |
+| Pages | 611-1464 | 13 pages de contenu |
 
 ---
 
