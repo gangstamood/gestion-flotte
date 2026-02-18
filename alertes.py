@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 
-def verifier_alertes(attributions):
-    """Véhicules avec date de retour prévue dans <= 2 jours."""
+def _verifier_alertes_date_retour(attributions, id_key='immatriculation'):
+    """Générique: véhicules/scooters avec date de retour prévue dans <= 2 jours."""
     alertes = []
     for attr in attributions:
         if attr.get('retourne'):
@@ -14,7 +14,7 @@ def verifier_alertes(attributions):
                 jours_restants = (date_retour.date() - datetime.now().date()).days
                 if jours_restants <= 2:
                     alertes.append({
-                        'immatriculation': attr['immatriculation'],
+                        'immatriculation': attr[id_key],
                         'service': attr['service'],
                         'jours_restants': jours_restants,
                         'date_retour': date_retour_prevue,
@@ -22,29 +22,16 @@ def verifier_alertes(attributions):
         except Exception:
             continue
     return alertes
+
+
+def verifier_alertes(attributions):
+    """Véhicules avec date de retour prévue dans <= 2 jours."""
+    return _verifier_alertes_date_retour(attributions)
 
 
 def verifier_alertes_scooters(attributions):
     """Scooters avec date de retour prévue dans <= 2 jours."""
-    alertes = []
-    for attr in attributions:
-        if attr.get('retourne'):
-            continue
-        try:
-            date_retour_prevue = attr.get('date_retour_prevue', '')
-            if date_retour_prevue:
-                date_retour = datetime.strptime(date_retour_prevue, "%d/%m/%Y")
-                jours_restants = (date_retour.date() - datetime.now().date()).days
-                if jours_restants <= 2:
-                    alertes.append({
-                        'immatriculation': attr['immatriculation'],
-                        'service': attr['service'],
-                        'jours_restants': jours_restants,
-                        'date_retour': date_retour_prevue,
-                    })
-        except Exception:
-            continue
-    return alertes
+    return _verifier_alertes_date_retour(attributions)
 
 
 def verifier_alertes_engins(attributions):

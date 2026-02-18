@@ -248,21 +248,20 @@ def check_password():
         else:
             st.session_state["password_correct"] = False
 
+    def show_login(error=None):
+        st.markdown("<div style='max-width: 400px; margin: 15vh auto; text-align: center;'>", unsafe_allow_html=True)
+        st.markdown("## 🚗 Gestion de Flotte")
+        st.markdown(f"<p style='color: {t['intro_color']}; margin-bottom: 2rem;'>Connectez-vous pour accéder à l'application</p>", unsafe_allow_html=True)
+        st.text_input("🔒 Mot de passe", type="password", on_change=password_entered, key="password")
+        if error:
+            st.error(error)
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.stop()
+
     if "password_correct" not in st.session_state:
-        st.markdown("<div style='max-width: 400px; margin: 15vh auto; text-align: center;'>", unsafe_allow_html=True)
-        st.markdown("## 🚗 Gestion de Flotte")
-        st.markdown(f"<p style='color: {t['intro_color']}; margin-bottom: 2rem;'>Connectez-vous pour accéder à l'application</p>", unsafe_allow_html=True)
-        st.text_input("🔒 Mot de passe", type="password", on_change=password_entered, key="password")
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.stop()
+        show_login()
     elif not st.session_state["password_correct"]:
-        st.markdown("<div style='max-width: 400px; margin: 15vh auto; text-align: center;'>", unsafe_allow_html=True)
-        st.markdown("## 🚗 Gestion de Flotte")
-        st.markdown(f"<p style='color: {t['intro_color']}; margin-bottom: 2rem;'>Connectez-vous pour accéder à l'application</p>", unsafe_allow_html=True)
-        st.text_input("🔒 Mot de passe", type="password", on_change=password_entered, key="password")
-        st.error("❌ Mot de passe incorrect")
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.stop()
+        show_login("❌ Mot de passe incorrect")
 
 check_password()
 
@@ -306,6 +305,7 @@ def write_sheet(sheet_name, data):
     ).execute()
     _load_all_sheets.clear()
 
+@st.cache_resource
 def init_database():
     try:
         sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
@@ -759,6 +759,17 @@ if page == "📊 Dashboard":
     interventions_en_cours_s = [i for i in interventions_scooters if i.get('statut') == "En cours"]
     nb_interventions = len(interventions_en_cours_v) + len(interventions_en_cours_e) + len(interventions_en_cours_s)
 
+    # Lookups O(1) pour éviter les recherches linéaires répétées
+    vh_map = {v['immatriculation']: v for v in vehicules}
+    sco_map = {s['immatriculation']: s for s in scooters}
+    eng_map = {e['numero_serie']: e for e in engins}
+    sorties_set_vh = {a['immatriculation'] for a in attributions if not a.get('retourne')}
+    sorties_set_sco = {a['immatriculation'] for a in attributions_scooters if not a.get('retourne')}
+    sorties_set_eng = {a['numero_serie'] for a in attributions_engins if not a.get('retourne')}
+    interv_set_vh = {i['immatriculation'] for i in interventions if i.get('statut') == "En cours"}
+    interv_set_sco = {i['immatriculation'] for i in interventions_scooters if i.get('statut') == "En cours"}
+    interv_set_eng = {i['numero_serie'] for i in interventions_engins if i.get('statut') == "En cours"}
+
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.metric("🚙 Véhicules", nb_vehicules)
@@ -791,8 +802,8 @@ if page == "📊 Dashboard":
             for v in vehicules:
                 immat = v.get('immatriculation', '')
                 # Statut : distribué ou disponible
-                en_sortie = any(a.get('immatriculation') == immat and not a.get('retourne') for a in attributions)
-                en_interv = any(i.get('immatriculation') == immat and i.get('statut') == "En cours" for i in interventions)
+                en_sortie = immat in sorties_set_vh
+                en_interv = immat in interv_set_vh
                 if en_interv:
                     statut = "🔧 En intervention"
                     couleur = "#f59e0b"
@@ -816,7 +827,7 @@ if page == "📊 Dashboard":
         if sorties_en_cours:
             for a in sorties_en_cours:
                 immat = a.get('immatriculation', '')
-                info_v = next((v for v in vehicules if v.get('immatriculation') == immat), {})
+                info_v = vh_map.get(immat, {})
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #ef4444;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
                     <span style='color:{t['h1_color']};font-weight:600;'>{immat}</span>
                     <span style='color:{t['label_color']};margin-left:1rem;'>{info_v.get('marque','')} — {info_v.get('type','')}</span><br/>
@@ -833,8 +844,8 @@ if page == "📊 Dashboard":
         if engins:
             for e in engins:
                 num = e.get('numero_serie', '')
-                en_sortie = any(a.get('numero_serie') == num and not a.get('retourne') for a in attributions_engins)
-                en_interv = any(i.get('numero_serie') == num and i.get('statut') == "En cours" for i in interventions_engins)
+                en_sortie = num in sorties_set_eng
+                en_interv = num in interv_set_eng
                 if en_interv:
                     statut = "🔧 En intervention"
                     couleur = "#f59e0b"
@@ -858,8 +869,8 @@ if page == "📊 Dashboard":
         if scooters:
             for s in scooters:
                 immat = s.get('immatriculation', '')
-                en_sortie = any(a.get('immatriculation') == immat and not a.get('retourne') for a in attributions_scooters)
-                en_interv = any(i.get('immatriculation') == immat and i.get('statut') == "En cours" for i in interventions_scooters)
+                en_sortie = immat in sorties_set_sco
+                en_interv = immat in interv_set_sco
                 if en_interv:
                     statut = "🔧 En intervention"
                     couleur = "#f59e0b"
@@ -884,7 +895,7 @@ if page == "📊 Dashboard":
             st.markdown("#### 🚗 Véhicules")
             for i in interventions_en_cours_v:
                 immat = i.get('immatriculation', '')
-                info_v = next((v for v in vehicules if v.get('immatriculation') == immat), {})
+                info_v = vh_map.get(immat, {})
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
                     <span style='color:{t['h1_color']};font-weight:600;'>{immat}</span>
                     <span style='color:{t['label_color']};margin-left:1rem;'>{info_v.get('marque','')} — {info_v.get('type','')}</span><br/>
@@ -895,7 +906,7 @@ if page == "📊 Dashboard":
             st.markdown("#### 🛵 Scooters")
             for i in interventions_en_cours_s:
                 immat = i.get('immatriculation', '')
-                info_s = next((s for s in scooters if s.get('immatriculation') == immat), {})
+                info_s = sco_map.get(immat, {})
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
                     <span style='color:{t['h1_color']};font-weight:600;'>{immat}</span>
                     <span style='color:{t['label_color']};margin-left:1rem;'>{info_s.get('marque','')} — {info_s.get('type','')}</span><br/>
@@ -906,7 +917,7 @@ if page == "📊 Dashboard":
             st.markdown("#### 🚜 Engins")
             for i in interventions_en_cours_e:
                 num = i.get('numero_serie', '')
-                info_e = next((e for e in engins if e.get('numero_serie') == num), {})
+                info_e = eng_map.get(num, {})
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
                     <span style='color:{t['h1_color']};font-weight:600;'>{num}</span>
                     <span style='color:{t['label_color']};margin-left:1rem;'>{info_e.get('marque','')} — {info_e.get('type','')}</span><br/>
@@ -931,8 +942,8 @@ if page == "📊 Dashboard":
         sorties_jour = [a for a in attributions if a.get('date') == aujourd_hui and not a.get('retourne')]
         if sorties_jour:
             df = pd.DataFrame(sorties_jour)
-            df['type'] = df['immatriculation'].apply(lambda x: next((v['type'] for v in vehicules if v['immatriculation'] == x), ""))
-            df['marque'] = df['immatriculation'].apply(lambda x: next((v['marque'] for v in vehicules if v['immatriculation'] == x), ""))
+            df['type'] = df['immatriculation'].map(lambda x: vh_map.get(x, {}).get('type', ''))
+            df['marque'] = df['immatriculation'].map(lambda x: vh_map.get(x, {}).get('marque', ''))
             if filtre_type != "Tous":
                 df = df[df['type'] == filtre_type]
             if filtre_service != "Tous":
@@ -952,8 +963,8 @@ if page == "📊 Dashboard":
         sorties_jour_sco = [a for a in attributions_scooters if a.get('date') == aujourd_hui and not a.get('retourne')]
         if sorties_jour_sco:
             df_sco = pd.DataFrame(sorties_jour_sco)
-            df_sco['type'] = df_sco['immatriculation'].apply(lambda x: next((s['type'] for s in scooters if s['immatriculation'] == x), ""))
-            df_sco['marque'] = df_sco['immatriculation'].apply(lambda x: next((s['marque'] for s in scooters if s['immatriculation'] == x), ""))
+            df_sco['type'] = df_sco['immatriculation'].map(lambda x: sco_map.get(x, {}).get('type', ''))
+            df_sco['marque'] = df_sco['immatriculation'].map(lambda x: sco_map.get(x, {}).get('marque', ''))
             if filtre_service != "Tous":
                 df_sco = df_sco[df_sco['service'] == filtre_service]
             if len(df_sco) > 0:
@@ -974,8 +985,8 @@ if page == "📊 Dashboard":
         sorties_jour_eng = [a for a in attributions_engins if a.get('date') == aujourd_hui and not a.get('retourne')]
         if sorties_jour_eng:
             df_eng = pd.DataFrame(sorties_jour_eng)
-            df_eng['type'] = df_eng['numero_serie'].apply(lambda x: next((e['type'] for e in engins if e['numero_serie'] == x), ""))
-            df_eng['marque'] = df_eng['numero_serie'].apply(lambda x: next((e['marque'] for e in engins if e['numero_serie'] == x), ""))
+            df_eng['type'] = df_eng['numero_serie'].map(lambda x: eng_map.get(x, {}).get('type', ''))
+            df_eng['marque'] = df_eng['numero_serie'].map(lambda x: eng_map.get(x, {}).get('marque', ''))
             if filtre_service != "Tous":
                 df_eng = df_eng[df_eng['service'] == filtre_service]
             if len(df_eng) > 0:
@@ -996,8 +1007,8 @@ if page == "📊 Dashboard":
         retours_jour = [a for a in attributions if a.get('retourne', '').startswith(aujourd_hui)]
         if retours_jour:
             df_ret = pd.DataFrame(retours_jour)
-            df_ret['type'] = df_ret['immatriculation'].apply(lambda x: next((v['type'] for v in vehicules if v['immatriculation'] == x), ""))
-            df_ret['marque'] = df_ret['immatriculation'].apply(lambda x: next((v['marque'] for v in vehicules if v['immatriculation'] == x), ""))
+            df_ret['type'] = df_ret['immatriculation'].map(lambda x: vh_map.get(x, {}).get('type', ''))
+            df_ret['marque'] = df_ret['immatriculation'].map(lambda x: vh_map.get(x, {}).get('marque', ''))
             if filtre_type != "Tous":
                 df_ret = df_ret[df_ret['type'] == filtre_type]
             if filtre_service != "Tous":
@@ -1017,8 +1028,8 @@ if page == "📊 Dashboard":
         retours_jour_sco = [a for a in attributions_scooters if a.get('retourne', '').startswith(aujourd_hui)]
         if retours_jour_sco:
             df_ret_sco = pd.DataFrame(retours_jour_sco)
-            df_ret_sco['type'] = df_ret_sco['immatriculation'].apply(lambda x: next((s['type'] for s in scooters if s['immatriculation'] == x), ""))
-            df_ret_sco['marque'] = df_ret_sco['immatriculation'].apply(lambda x: next((s['marque'] for s in scooters if s['immatriculation'] == x), ""))
+            df_ret_sco['type'] = df_ret_sco['immatriculation'].map(lambda x: sco_map.get(x, {}).get('type', ''))
+            df_ret_sco['marque'] = df_ret_sco['immatriculation'].map(lambda x: sco_map.get(x, {}).get('marque', ''))
             if filtre_service != "Tous":
                 df_ret_sco = df_ret_sco[df_ret_sco['service'] == filtre_service]
             if len(df_ret_sco) > 0:
@@ -1064,6 +1075,19 @@ if page == "📊 Dashboard":
             st.rerun()
     else:
         st.info("Aucun scooter distribué")
+
+    st.markdown("---")
+    st.markdown("### 🔙 Retourner un Engin")
+    sortis_engins_dash = [a for a in attributions_engins if not a.get('retourne')]
+    if sortis_engins_dash:
+        col_r1, col_r2 = st.columns([3, 1])
+        engin_ret_dash = col_r1.selectbox("Engin", [f"{e['numero_serie']} - {e['service']}" for e in sortis_engins_dash])
+        if col_r2.button("✅ Retourner", type="primary", key="ret_eng_dash"):
+            retourner_engin(engin_ret_dash.split(" - ")[0])
+            st.success("✅ Retourné !")
+            st.rerun()
+    else:
+        st.info("Aucun engin distribué")
 
 elif page == "➕ Saisir un véhicule":
     st.markdown("# ➕ Nouveau Véhicule")
