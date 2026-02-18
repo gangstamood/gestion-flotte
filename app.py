@@ -398,6 +398,7 @@ def write_sheet(sheet_name, data):
         spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A:Z"
     ).execute()
     if not data:
+        _load_all_sheets.clear()
         return
     headers = list(data[0].keys())
     values = [headers] + [[row.get(h, '') for h in headers] for row in data]
@@ -405,6 +406,7 @@ def write_sheet(sheet_name, data):
         spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A1",
         valueInputOption="RAW", body={"values": values}
     ).execute()
+    _load_all_sheets.clear()
 
 def init_database():
     try:
@@ -421,6 +423,33 @@ def init_database():
         pass
 
 init_database()
+
+# CHARGEMENT BATCH AVEC CACHE
+ALL_SHEET_NAMES = [
+    'vehicules', 'attributions', 'categories', 'services', 'interventions',
+    'carburant', 'engins', 'attributions_engins', 'categories_engins',
+    'interventions_engins', 'scooters', 'attributions_scooters',
+    'categories_scooters', 'interventions_scooters'
+]
+
+@st.cache_data(ttl=60, show_spinner="Chargement des données...")
+def _load_all_sheets():
+    ranges = [f"{name}!A:Z" for name in ALL_SHEET_NAMES]
+    try:
+        result = sheets_service.spreadsheets().values().batchGet(
+            spreadsheetId=SPREADSHEET_ID, ranges=ranges
+        ).execute()
+        data = {}
+        for i, vr in enumerate(result.get('valueRanges', [])):
+            values = vr.get('values', [])
+            if not values or len(values) < 2:
+                data[ALL_SHEET_NAMES[i]] = []
+            else:
+                headers = values[0]
+                data[ALL_SHEET_NAMES[i]] = [dict(zip(headers, row + [''] * (len(headers) - len(row)))) for row in values[1:]]
+        return data
+    except Exception:
+        return {name: [] for name in ALL_SHEET_NAMES}
 
 # FONCTIONS CRUD
 def get_vehicules():
@@ -708,21 +737,26 @@ def verifier_alertes(attributions):
             continue
     return alertes
 
-# CHARGEMENT DONNÉES
-vehicules = get_vehicules()
-attributions = get_attributions()
-categories = get_categories()
-services = get_services()
-interventions = get_interventions()
-bons_carburant = get_carburant()
-engins = get_engins()
-attributions_engins = get_attributions_engins()
-categories_engins = get_categories_engins()
-interventions_engins = get_interventions_engins()
-scooters = get_scooters()
-attributions_scooters = get_attributions_scooters()
-categories_scooters = get_categories_scooters()
-interventions_scooters = get_interventions_scooters()
+# CHARGEMENT DONNÉES (1 seul appel API au lieu de 14)
+_all = _load_all_sheets()
+vehicules = _all.get('vehicules', [])
+attributions = _all.get('attributions', [])
+_cats = _all.get('categories', [])
+categories = [c.get('nom', '') for c in _cats if c.get('nom')] or get_categories()
+_srvs = _all.get('services', [])
+services = [s.get('nom', '') for s in _srvs if s.get('nom')] or get_services()
+interventions = _all.get('interventions', [])
+bons_carburant = _all.get('carburant', [])
+engins = _all.get('engins', [])
+attributions_engins = _all.get('attributions_engins', [])
+_cats_e = _all.get('categories_engins', [])
+categories_engins = [c.get('nom', '') for c in _cats_e if c.get('nom')] or get_categories_engins()
+interventions_engins = _all.get('interventions_engins', [])
+scooters = _all.get('scooters', [])
+attributions_scooters = _all.get('attributions_scooters', [])
+_cats_s = _all.get('categories_scooters', [])
+categories_scooters = [c.get('nom', '') for c in _cats_s if c.get('nom')] or get_categories_scooters()
+interventions_scooters = _all.get('interventions_scooters', [])
 
 # SIDEBAR
 with st.sidebar:
