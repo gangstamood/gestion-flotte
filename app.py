@@ -581,9 +581,9 @@ def delete_scooter(immat):
 def get_attributions_scooters():
     return read_sheet('attributions_scooters')
 
-def add_attribution_scooter(immat, service, date, heure, date_retour_prevue):
+def add_attribution_scooter(immat, service, date, heure, date_retour_prevue, casque=""):
     attributions = get_attributions_scooters()
-    attributions.append({'immatriculation': immat, 'service': service, 'date': date, 'heure': heure, 'date_retour_prevue': date_retour_prevue, 'retourne': ''})
+    attributions.append({'immatriculation': immat, 'service': service, 'date': date, 'heure': heure, 'date_retour_prevue': date_retour_prevue, 'casque': casque, 'retourne': ''})
     write_sheet('attributions_scooters', attributions)
 
 def retourner_scooter(immat):
@@ -1039,7 +1039,10 @@ if page == "📊 Dashboard":
                     df_srv = df_sco[df_sco['service'] == srv]
                     if len(df_srv) > 0:
                         st.markdown(f"#### 🔹 {srv}")
-                        st.dataframe(df_srv[['immatriculation', 'type', 'marque', 'date', 'heure']], use_container_width=True, hide_index=True)
+                        cols_sco = ['immatriculation', 'type', 'marque', 'date', 'heure']
+                        if 'casque' in df_srv.columns:
+                            cols_sco.append('casque')
+                        st.dataframe(df_srv[cols_sco], use_container_width=True, hide_index=True)
             else:
                 st.warning("⚠️ Aucune attribution")
         else:
@@ -1101,7 +1104,10 @@ if page == "📊 Dashboard":
                     df_srv = df_ret_sco[df_ret_sco['service'] == srv]
                     if len(df_srv) > 0:
                         st.markdown(f"#### 🔹 {srv}")
-                        st.dataframe(df_srv[['immatriculation', 'type', 'marque', 'date', 'retourne']], use_container_width=True, hide_index=True)
+                        cols_ret_sco = ['immatriculation', 'type', 'marque', 'date', 'retourne']
+                        if 'casque' in df_srv.columns:
+                            cols_ret_sco.append('casque')
+                        st.dataframe(df_srv[cols_ret_sco], use_container_width=True, hide_index=True)
             else:
                 st.info("✅ Aucun retour aujourd'hui")
         else:
@@ -1125,7 +1131,11 @@ if page == "📊 Dashboard":
     sortis_sco = [a for a in attributions_scooters if not a.get('retourne')]
     if sortis_sco:
         col_r1, col_r2 = st.columns([3, 1])
-        immat_ret_sco = col_r1.selectbox("Scooter", [f"{v['immatriculation']} - {v['service']}" for v in sortis_sco])
+        options_sco = []
+        for v in sortis_sco:
+            casque_info = f" | Casque: {v['casque']}" if v.get('casque') else ""
+            options_sco.append(f"{v['immatriculation']} - {v['service']}{casque_info}")
+        immat_ret_sco = col_r1.selectbox("Scooter", options_sco)
         if col_r2.button("✅ Retourner", type="primary", key="ret_sco"):
             retourner_scooter(immat_ret_sco.split(" - ")[0])
             st.success("✅ Retourné !")
@@ -1338,12 +1348,14 @@ elif page == "🔧 Attribuer un scooter":
             col3, col4 = st.columns(2)
             date_s_sco = col3.date_input("Date sortie", value=datetime.now())
             heure_s_sco = col4.time_input("Heure sortie", value=datetime.now().time())
-            date_retour_sco = st.date_input("Date de retour prévue *", value=datetime.now() + timedelta(days=1))
+            col5, col6 = st.columns(2)
+            date_retour_sco = col5.date_input("Date de retour prévue *", value=datetime.now() + timedelta(days=1))
+            casque_sco = col6.text_input("🪖 Casque attribué", placeholder="N° ou réf. du casque")
             if st.form_submit_button("✅ Confirmer", type="primary"):
                 if date_retour_sco < date_s_sco:
                     st.error("❌ La date de retour doit être après la date de sortie")
                 else:
-                    add_attribution_scooter(sco_sel.split(" - ")[0], service_sco, date_s_sco.strftime("%d/%m/%Y"), heure_s_sco.strftime("%H:%M"), date_retour_sco.strftime("%d/%m/%Y"))
+                    add_attribution_scooter(sco_sel.split(" - ")[0], service_sco, date_s_sco.strftime("%d/%m/%Y"), heure_s_sco.strftime("%H:%M"), date_retour_sco.strftime("%d/%m/%Y"), casque_sco)
                     st.success("✅ Attribué !")
                     st.rerun()
     else:
