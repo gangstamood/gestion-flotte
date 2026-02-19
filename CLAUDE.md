@@ -7,12 +7,45 @@
 - **PDF** : ReportLab (bons de carburant)
 - **Data** : Pandas pour import/export CSV/Excel
 
+---
+
+## Architecture modulaire
+
+```
+gestion-flotte/
+├── app.py              # Point d'entrée + config + routeur de pages
+├── database.py         # Connexion Google Sheets + fonctions CRUD
+├── pdf.py              # Génération PDF (bons carburant)
+├── styles.py           # Thèmes CSS (THEMES dict + get_css)
+├── alertes.py          # Fonctions d'alertes
+├── pages/              # Modules de pages
+│   ├── __init__.py
+│   ├── dashboard.py    # Vue d'ensemble
+│   ├── vehicules.py    # Saisie, attribution, carburant, interventions
+│   ├── scooters.py     # Saisie, attribution, interventions
+│   ├── engins.py       # Saisie, attribution (planning), interventions
+│   └── parametres.py   # Thèmes, catégories, services, liens
+├── .streamlit/
+│   └── config.toml     # Config Streamlit
+└── requirements.txt    # Dépendances Python
+```
+
+---
+
 ## Fichiers
-- `app.py` — Application principale (~1510 lignes)
-- `styles.py` — `THEMES` dict (4 thèmes) + `get_css(t)` : tout le CSS injecté via `st.markdown()`
-- `alertes.py` — `verifier_alertes()`, `verifier_alertes_scooters()` (via `_verifier_alertes_date_retour()`), `verifier_alertes_engins()`
-- `.streamlit/config.toml` — Config Streamlit
-- `requirements.txt` — Dépendances Python
+
+| Fichier | Lignes | Description |
+|---------|--------|-------------|
+| `app.py` | ~220 | Point d'entrée, auth, sidebar, routeur |
+| `database.py` | ~380 | Connexion GSheets + CRUD complet |
+| `pdf.py` | ~60 | Génération PDF bons carburant |
+| `styles.py` | ~320 | 4 thèmes + CSS injecté |
+| `alertes.py` | ~80 | Fonctions d'alertes |
+| `pages/dashboard.py` | ~320 | Page dashboard |
+| `pages/vehicules.py` | ~280 | Pages véhicules |
+| `pages/scooters.py` | ~180 | Pages scooters |
+| `pages/engins.py` | ~280 | Pages engins |
+| `pages/parametres.py` | ~150 | Page paramètres |
 
 ---
 
@@ -29,27 +62,37 @@ spreadsheet_id = "..."
 
 ---
 
-## Structure du code (ordre dans app.py)
+## Structure du code
 
-| Section | Lignes approx. | Description |
-|---------|----------------|-------------|
-| Imports | 1-11 | streamlit, pandas, google, reportlab, io + `styles` (THEMES, get_css) + `alertes` |
-| Config page | 13 | `st.set_page_config()` |
-| Thème actif | 15-18 | Init `session_state.theme` + `t = THEMES[...]` (THEMES défini dans `styles.py`) |
-| CSS | 20 | `st.markdown(get_css(t))` — défini dans `styles.py` |
-| Hamburger JS | 22-104 | Menu mobile via `components.html()` |
-| Auth | 107-131 | `check_password()` avec `show_login()` interne |
-| Google Sheets | 134-214 | Connexion, read/write, `@st.cache_resource init_database()`, batch loader |
-| CRUD Véhicules | 216-274 | get/add/delete vehicules, attributions, categories |
-| CRUD Services | 276-290 | get/add/delete services |
-| CRUD Interventions | 292-298 | Véhicules |
-| CRUD Carburant | 300-316 | Bons carburant |
-| CRUD Engins | 318-382 | get/add/delete engins + attributions + catégories |
-| CRUD Scooters | 384-448 | get/add/delete scooters + attributions + catégories |
-| PDF | 450-492 | generer_pdf_bon() |
-| Chargement données | 494-512 | Batch load via _load_all_sheets() |
-| Sidebar | 514-608 | Navigation catégorisée + alertes (fonctions dans alertes.py) |
-| Pages | 611-1464 | 13 pages de contenu |
+### app.py (Point d'entrée)
+- Configuration de la page
+- Initialisation du thème
+- Bouton hamburger JS
+- Authentification
+- Chargement des données
+- Sidebar avec navigation
+- Routeur de pages
+
+### database.py (CRUD)
+- `get_sheets_service()` — Connexion Google Sheets
+- `read_sheet()` / `write_sheet()` — Opérations de base
+- `_load_all_sheets()` — Chargement batch avec cache 60s
+- CRUD Véhicules, Scooters, Engins
+- CRUD Attributions (3 types)
+- CRUD Catégories, Services, Interventions
+- CRUD Carburant, Liens
+
+### pdf.py
+- `generer_pdf_bon()` — Génération PDF pour bons carburant
+
+### styles.py
+- `THEMES` — Dictionnaire de 4 thèmes
+- `get_css(t)` — CSS injecté via `st.markdown()`
+
+### alertes.py
+- `verifier_alertes()` — Véhicules à retourner
+- `verifier_alertes_scooters()` — Scooters à retourner
+- `verifier_alertes_engins()` — Engins à retourner
 
 ---
 
@@ -105,7 +148,7 @@ spreadsheet_id = "..."
 | date | Date de début (JJ/MM/AAAA) |
 | date_fin | Date de fin de la période (JJ/MM/AAAA) |
 | periode | Journée / Matin / Après-midi |
-| retourne | Vide ou datetime retour effectif (override date_fin) |
+| retourne | Vide ou datetime retour effectif |
 
 ### categories / categories_engins / categories_scooters
 | Colonne | Défauts |
@@ -139,8 +182,8 @@ spreadsheet_id = "..."
 | numero_carte | N° carte carburant |
 | conducteur_nom / conducteur_prenom | Identité conducteur |
 | type_carburant | Diesel, SP95, SP98, GPL, Électrique |
-| volume | Litres (string, converti en numeric) |
-| montant | Euros (string, converti en numeric) |
+| volume | Litres |
+| montant | Euros |
 | notes | Optionnel |
 | statut | Non saisi / Saisi |
 
@@ -148,78 +191,26 @@ spreadsheet_id = "..."
 | Colonne | Description |
 |---------|-------------|
 | nom | Libellé affiché sur le bouton du Dashboard |
-| url | URL complète vers le tableau Excel / Google Sheets |
-
----
-
-## Fonctions CRUD complètes
-
-### Véhicules
-- `get_vehicules()` → `read_sheet('vehicules')`
-- `add_vehicule(immat, type_v, marque)` — anti-doublon
-- `delete_vehicule(immat)`
-- `get_attributions()` → `read_sheet('attributions')`
-- `add_attribution(immat, service, date, heure, date_retour_prevue)`
-- `retourner_vehicule(immat)` — marque la dernière attribution non retournée
-- `update_attribution(idx, data)` — modification par index
-- `delete_attribution(idx)` — suppression par index
-
-### Scooters
-- `get_scooters()` / `add_scooter()` / `delete_scooter()`
-- `get_attributions_scooters()` / `add_attribution_scooter(immat, service, date, heure, date_retour_prevue, casque="")`
-- `retourner_scooter(immat)`
-- `update_attribution_scooter(idx, data)` / `delete_attribution_scooter(idx)`
-
-### Engins
-- `get_engins()` / `add_engin()` / `delete_engin()`
-- `_is_engin_active_today(attr)` — True si date_debut ≤ today ≤ date_fin et non retourné
-- `get_attributions_engins()` / `add_attribution_engin(num_serie, service, date_debut, date_fin, periode)`
-- `retourner_engin(num_serie)` — marque retourne avec datetime actuel
-- `update_attribution_engin(idx, data)` / `delete_attribution_engin(idx)`
-
-### Catégories & Services
-- `get_categories()` / `add_category(nom)` / `delete_category(nom)` — avec défauts
-- `get_categories_engins()` / `add_category_engin()` / `delete_category_engin()`
-- `get_categories_scooters()` / `add_category_scooter()` / `delete_category_scooter()`
-- `get_services()` / `add_service(nom)` / `delete_service(nom)` — avec défauts
-
-### Interventions
-- `get_interventions()` / `add_intervention(immat, type_i, date, heure, comm, statut)`
-- `get_interventions_engins()` / `add_intervention_engin(num_serie, ...)`
-- `get_interventions_scooters()` / `add_intervention_scooter(immat, ...)`
-
-### Carburant
-- `get_carburant()` / `add_bon_carburant(bon)` / `update_bon_carburant(numero_bon, type_carb, volume, montant)` / `delete_bon_carburant(numero_bon)`
-
-### Liens
-- `get_liens()` / `add_lien(nom, url)` — anti-doublon sur `nom` / `delete_lien(nom)`
-
-### Alertes
-- `verifier_alertes(attributions)` — véhicules, retour <= 2 jours
-- `verifier_alertes_scooters(attributions)` — scooters, retour <= 2 jours
-- `verifier_alertes_engins(attributions)` — engins dont date_fin < today et non retournés (rétrocompat: >8h si pas de date_fin)
-
-### PDF
-- `generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None)` → BytesIO
+| url | URL complète vers le tableau |
 
 ---
 
 ## Pages de l'application
 
-| Page | Clé nav | Contenu |
-|------|---------|---------|
-| Dashboard | 📊 Dashboard | Boutons liens Excel (si configurés), métriques, détails par type, sorties/retours du jour, retourner véhicule/scooter/engin |
-| Saisir véhicule | ➕ Saisir un véhicule | Formulaire ajout + liste avec suppression |
-| Attribuer véhicule | 🔧 Attribuer un véhicule | Formulaire + historique éditable |
-| Bons carburant | ⛽ Bons de Carburant | Générer bon PDF + saisie retour |
-| Interventions VH | 🔨 Pannes & Interventions | Déclarer + historique |
-| Saisir scooter | 🛵 Saisir un scooter | Formulaire ajout + liste |
-| Attribuer scooter | 🔧 Attribuer un scooter | Formulaire (avec casque) + historique éditable |
-| Interventions SCO | 🔨 Interventions Scooters | Déclarer + historique |
-| Saisir engin | 🚜 Saisir un engin | Formulaire ajout + liste |
-| Attribuer engin | 🔧 Attribuer un engin | Planning semaine (grille HTML colorée par service, navigation ±semaine) + formulaire période (date_debut/date_fin/periode) + historique éditable |
-| Interventions ENG | 🔨 Interventions Engins | Déclarer + historique |
-| Paramètres | ⚙️ Paramètres | Thème + gestion catégories/services + gestion liens Excel (📎) |
+| Page | Module | Fonction |
+|------|--------|----------|
+| Dashboard | `pages/dashboard.py` | `render()` |
+| Saisir véhicule | `pages/vehicules.py` | `render_saisir()` |
+| Attribuer véhicule | `pages/vehicules.py` | `render_attribuer()` |
+| Bons carburant | `pages/vehicules.py` | `render_carburant()` |
+| Interventions VH | `pages/vehicules.py` | `render_interventions()` |
+| Saisir scooter | `pages/scooters.py` | `render_saisir()` |
+| Attribuer scooter | `pages/scooters.py` | `render_attribuer()` |
+| Interventions SCO | `pages/scooters.py` | `render_interventions()` |
+| Saisir engin | `pages/engins.py` | `render_saisir()` |
+| Attribuer engin | `pages/engins.py` | `render_attribuer()` |
+| Interventions ENG | `pages/engins.py` | `render_interventions()` |
+| Paramètres | `pages/parametres.py` | `render()` |
 
 ---
 
@@ -249,9 +240,6 @@ spreadsheet_id = "..."
 └── 🗄️ Base connectée
 ```
 
-Navigation via `st.session_state.page` + `nav_to()` callback.
-Expanders ouverts auto quand page active dans la catégorie.
-
 ---
 
 ## Système de cache
@@ -268,7 +256,6 @@ Prochain rerun : 1 appel batchGet (données fraîches)
 
 - `@st.cache_resource` : connexion Google Sheets (permanent)
 - `@st.cache_data(ttl=60)` : données des feuilles (60s)
-- Les fonctions CRUD utilisent `read_sheet()` non-caché pour garantir la fraîcheur lors des écritures
 
 ---
 
@@ -276,12 +263,6 @@ Prochain rerun : 1 appel batchGet (données fraîches)
 - `theme` — nom du thème actif
 - `password_correct` — booléen auth
 - `page` — page de navigation courante
-- `dashboard_detail` — vue détail du dashboard (vehicules/scooters/engins/None)
-- `dernier_bon` — dernier bon carburant généré (pour PDF)
-
-## Patterns de clés formulaires
-- `f"edit_attr_vh_{idx}"` / `f"edit_attr_sco_{idx}"` / `f"edit_attr_eng_{idx}"` — forms édition
-- `f"srv_vh_{idx}"` / `f"dr_vh_{idx}"` / `f"ds_vh_{idx}"` / `f"hs_vh_{idx}"` — champs véhicules
-- `f"srv_sco_{idx}"` / `f"dr_sco_{idx}"` / `f"cq_sco_{idx}"` — champs scooters
-- `f"srv_eng_{idx}"` / `f"ds_eng_{idx}"` / `f"hs_eng_{idx}"` — champs engins
-- `f"del_{immat}"` / `f"del_sco_{immat}"` / `f"del_eng_{num}"` — boutons suppression entités
+- `dashboard_detail` — vue détail du dashboard
+- `dernier_bon` — dernier bon carburant généré
+- `eng_sem_offset` — décalage semaine planning engins
