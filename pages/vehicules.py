@@ -1,3 +1,4 @@
+import html
 import streamlit as st
 from datetime import datetime, timedelta
 from database import (
@@ -7,6 +8,8 @@ from database import (
     add_intervention
 )
 from pdf import generer_pdf_bon
+
+esc = html.escape
 
 
 def render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions):
@@ -40,7 +43,7 @@ def _page_saisir(t, vehicules, categories):
     if vehicules:
         for vh in vehicules:
             col1, col2 = st.columns([5, 1])
-            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{vh['immatriculation']}</span> <span style='color: {t['label_color']};'>— {vh['type']} {vh['marque']}</span></div>", unsafe_allow_html=True)
+            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{esc(vh['immatriculation'])}</span> <span style='color: {t['label_color']};'>— {esc(vh['type'])} {esc(vh['marque'])}</span></div>", unsafe_allow_html=True)
             if col2.button("🗑️", key=f"del_{vh['immatriculation']}"):
                 delete_vehicule(vh['immatriculation'])
                 st.rerun()
@@ -127,7 +130,7 @@ def _page_carburant(t, vehicules, attributions, services, bons_carburant):
                     st.error("❌ Champs requis")
         if 'dernier_bon' in st.session_state:
             bon = st.session_state.dernier_bon['bon']
-            st.markdown(f"<div style='background: {t['input_bg']}; border-radius: 16px; padding: 2rem; margin: 1rem 0; border: 1px solid {t['card_border']};'><h3 style='color: {t['h1_color']}; text-align: center;'>📄 BON DE CARBURANT</h3><p style='color: {t['label_color']};'><strong style='color: {t['strong_color']};'>N°:</strong> {bon['numero_bon']} | <strong style='color: {t['strong_color']};'>Véhicule:</strong> {bon['immatriculation']} | <strong style='color: #ef4444;'>Carte N°{bon['numero_carte']}</strong></p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background: {t['input_bg']}; border-radius: 16px; padding: 2rem; margin: 1rem 0; border: 1px solid {t['card_border']};'><h3 style='color: {t['h1_color']}; text-align: center;'>📄 BON DE CARBURANT</h3><p style='color: {t['label_color']};'><strong style='color: {t['strong_color']};'>N°:</strong> {esc(bon['numero_bon'])} | <strong style='color: {t['strong_color']};'>Véhicule:</strong> {esc(bon['immatriculation'])} | <strong style='color: #ef4444;'>Carte N°{esc(bon['numero_carte'])}</strong></p></div>", unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
                 pdf = generer_pdf_bon(bon, st.session_state.dernier_bon['conducteur_nom'], st.session_state.dernier_bon['conducteur_prenom'], st.session_state.dernier_bon.get('logo_url'))
@@ -169,13 +172,13 @@ def _page_carburant(t, vehicules, attributions, services, bons_carburant):
             statut = bon.get('statut', '')
             statut_color = '#ef4444' if statut == 'Non saisi' else '#10b981'
             c = st.columns([2, 1.5, 1, 1.2, 0.8, 0.9, 1, 0.5])
-            c[0].markdown(f"<small>{num}</small>", unsafe_allow_html=True)
-            c[1].markdown(f"<small>{bon.get('immatriculation', '')}</small>", unsafe_allow_html=True)
-            c[2].markdown(f"<small>{bon.get('date', '')}</small>", unsafe_allow_html=True)
-            c[3].markdown(f"<small>{bon.get('type_carburant', '-')}</small>", unsafe_allow_html=True)
-            c[4].markdown(f"<small>{bon.get('volume', '-')}</small>", unsafe_allow_html=True)
-            c[5].markdown(f"<small>{bon.get('montant', '-')}</small>", unsafe_allow_html=True)
-            c[6].markdown(f"<small style='color:{statut_color}'>{statut}</small>", unsafe_allow_html=True)
+            c[0].markdown(f"<small>{esc(num)}</small>", unsafe_allow_html=True)
+            c[1].markdown(f"<small>{esc(bon.get('immatriculation', ''))}</small>", unsafe_allow_html=True)
+            c[2].markdown(f"<small>{esc(bon.get('date', ''))}</small>", unsafe_allow_html=True)
+            c[3].markdown(f"<small>{esc(bon.get('type_carburant', '-'))}</small>", unsafe_allow_html=True)
+            c[4].markdown(f"<small>{esc(bon.get('volume', '-'))}</small>", unsafe_allow_html=True)
+            c[5].markdown(f"<small>{esc(bon.get('montant', '-'))}</small>", unsafe_allow_html=True)
+            c[6].markdown(f"<small style='color:{statut_color}'>{esc(statut)}</small>", unsafe_allow_html=True)
             if c[7].button("🗑️", key=f"del_bon_{num}"):
                 delete_bon_carburant(num)
                 st.rerun()
