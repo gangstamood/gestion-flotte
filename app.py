@@ -3,12 +3,10 @@ import pandas as pd
 from datetime import datetime, timedelta
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-import io
 import streamlit.components.v1 as components
 from styles import get_css, THEMES
 from alertes import verifier_alertes, verifier_alertes_scooters, verifier_alertes_engins
+from pdf import generer_pdf_bon
 
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide", initial_sidebar_state="expanded")
 
@@ -472,50 +470,6 @@ def add_intervention_scooter(immat, type_i, date, heure, comm, statut):
     interventions = get_interventions_scooters()
     interventions.append({'immatriculation': immat, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut})
     write_sheet('interventions_scooters', interventions)
-
-def generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    if logo_url:
-        try:
-            c.drawImage(logo_url, 50, height - 100, width=100, height=80, preserveAspectRatio=True)
-        except Exception:
-            pass
-    c.setFont("Helvetica-Bold", 24)
-    c.drawCentredString(width/2, height - 120, "BON DE CARBURANT")
-    c.line(50, height - 140, width - 50, height - 140)
-    c.setFont("Helvetica-Bold", 12)
-    y = height - 180
-    c.drawString(80, y, f"N° de Bon : {bon['numero_bon']}")
-    y -= 30
-    c.setFont("Helvetica-Bold", 16)
-    c.setFillColorRGB(0.8, 0.2, 0.2)
-    c.drawString(80, y, f"Carte N°{bon['numero_carte']}")
-    c.setFillColorRGB(0, 0, 0)
-    y -= 40
-    c.setFont("Helvetica", 12)
-    c.drawString(80, y, f"Vehicule : {bon['immatriculation']}")
-    y -= 25
-    c.drawString(80, y, f"Service : {bon['service']}")
-    y -= 25
-    c.drawString(80, y, f"Date : {bon['date']}")
-    y -= 25
-    c.drawString(80, y, f"Conducteur : {conducteur_prenom} {conducteur_nom}")
-    if bon.get('notes'):
-        y -= 25
-        c.drawString(80, y, f"Notes : {bon['notes']}")
-    y -= 30
-    c.line(50, y, width - 50, y)
-    y -= 40
-    c.setFont("Helvetica-Oblique", 11)
-    c.setFillColorRGB(0.4, 0.4, 0.4)
-    c.drawCentredString(width/2, y, "Volume, type de carburant et montant a saisir au retour")
-    c.setFont("Helvetica", 8)
-    c.drawCentredString(width/2, 50, "Document genere automatiquement - Gestion de Flotte")
-    c.save()
-    buffer.seek(0)
-    return buffer
 
 # CHARGEMENT DONNÉES (1 seul appel API au lieu de 14)
 _all = _load_all_sheets()
