@@ -39,19 +39,20 @@ gestion-flotte/
 
 | Fichier | Lignes | Description |
 |---------|--------|-------------|
-| `app.py` | ~140 | Point d'entrée, config, init, routeur |
-| `auth.py` | ~45 | Authentification (check_password) |
-| `hamburger.py` | ~90 | Bouton hamburger JS (inject_hamburger) |
-| `sidebar.py` | ~130 | Navigation + alertes (render_sidebar) |
-| `database.py` | ~380 | Connexion GSheets + CRUD complet |
-| `pdf.py` | ~60 | Génération PDF bons carburant |
-| `styles.py` | ~320 | 4 thèmes + CSS injecté |
-| `alertes.py` | ~80 | Fonctions d'alertes |
-| `pages/dashboard.py` | ~320 | Page dashboard |
-| `pages/vehicules.py` | ~280 | Pages véhicules |
-| `pages/scooters.py` | ~180 | Pages scooters |
-| `pages/engins.py` | ~280 | Pages engins |
-| `pages/parametres.py` | ~150 | Page paramètres |
+| `app.py` | ~75 | Point d'entrée, config, chargement données, routeur |
+| `auth.py` | ~25 | Authentification — `check_password(t)` |
+| `hamburger.py` | ~75 | Bouton hamburger JS — `inject_hamburger(t)` |
+| `sidebar.py` | ~80 | Navigation + alertes — `render_sidebar(t, ...)` |
+| `database.py` | ~230 | Connexion GSheets + CRUD complet |
+| `pdf.py` | ~45 | Génération PDF bons carburant — `generer_pdf_bon(...)` |
+| `styles.py` | ~240 | 4 thèmes + CSS injecté — `THEMES`, `get_css(t)` |
+| `alertes.py` | ~72 | Fonctions d'alertes |
+| `pages/__init__.py` | 0 | Package Python |
+| `pages/dashboard.py` | ~230 | `render_dashboard(t, ...)` |
+| `pages/vehicules.py` | ~190 | `render_vehicules(page, t, ...)` — 4 sous-pages |
+| `pages/scooters.py` | ~130 | `render_scooters(page, t, ...)` — 3 sous-pages |
+| `pages/engins.py` | ~185 | `render_engins(page, t, ...)` — 3 sous-pages |
+| `pages/parametres.py` | ~90 | `render_parametres(t, ...)` |
 
 ---
 
@@ -71,25 +72,52 @@ spreadsheet_id = "..."
 ## Structure du code
 
 ### app.py (Point d'entrée)
-- Configuration de la page
-- Initialisation du thème
-- Bouton hamburger JS
-- Authentification
-- Chargement des données
-- Sidebar avec navigation
-- Routeur de pages
+- Configuration de la page (`st.set_page_config`)
+- Initialisation du thème + injection CSS
+- Appel `inject_hamburger(t)`
+- Appel `check_password(t)`
+- Appel `init_database()` + `_load_all_sheets()`
+- Chargement et dérivation des données en variables locales
+- Initialisation `st.session_state` (page, dashboard_detail, eng_sem_offset)
+- Appel `render_sidebar(...)`
+- Routeur : dispatche vers `render_dashboard / render_vehicules / render_scooters / render_engins / render_parametres`
+
+### auth.py
+- `check_password(t)` — Authentification par mot de passe, affiche login si besoin
+
+### hamburger.py
+- `inject_hamburger(t)` — Injecte le bouton hamburger JS via `components.html`
+
+### sidebar.py
+- `render_sidebar(t, attributions, attributions_scooters, attributions_engins, services)` — Sidebar complète avec navigation et alertes
 
 ### database.py (CRUD)
-- `get_sheets_service()` — Connexion Google Sheets
+- `get_sheets_service()` — Connexion Google Sheets (cached)
 - `read_sheet()` / `write_sheet()` — Opérations de base
 - `_load_all_sheets()` — Chargement batch avec cache 60s
+- `init_database()` — Création des feuilles manquantes
 - CRUD Véhicules, Scooters, Engins
 - CRUD Attributions (3 types)
 - CRUD Catégories, Services, Interventions
 - CRUD Carburant, Liens
 
 ### pdf.py
-- `generer_pdf_bon()` — Génération PDF pour bons carburant
+- `generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None)` → BytesIO
+
+### pages/dashboard.py
+- `render_dashboard(t, vehicules, attributions, scooters, attributions_scooters, engins, attributions_engins, interventions, interventions_scooters, interventions_engins, services, liens)`
+
+### pages/vehicules.py
+- `render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions)` — dispatche vers 4 sous-pages
+
+### pages/scooters.py
+- `render_scooters(page, t, scooters, attributions_scooters, categories_scooters, services, interventions_scooters)` — dispatche vers 3 sous-pages
+
+### pages/engins.py
+- `render_engins(page, t, engins, attributions_engins, categories_engins, services, interventions_engins)` — dispatche vers 3 sous-pages
+
+### pages/parametres.py
+- `render_parametres(t, categories, services, categories_engins, categories_scooters, liens)`
 
 ### styles.py
 - `THEMES` — Dictionnaire de 4 thèmes
