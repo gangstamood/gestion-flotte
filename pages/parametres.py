@@ -1,3 +1,4 @@
+import html
 import streamlit as st
 from styles import THEMES
 from database import (
@@ -7,6 +8,9 @@ from database import (
     add_category_scooter, delete_category_scooter,
     add_lien, delete_lien
 )
+
+
+esc = html.escape
 
 
 def render_parametres(t, categories, services, categories_engins, categories_scooters, liens):
@@ -28,7 +32,7 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
         st.markdown("#### 🏷️ Catégories Véhicules")
         for cat in categories:
             c1, c2 = st.columns([4, 1])
-            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{cat}</div>", unsafe_allow_html=True)
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{esc(cat)}</div>", unsafe_allow_html=True)
             if c2.button("🗑️", key=f"dc_{cat}"):
                 delete_category(cat)
                 st.rerun()
@@ -42,7 +46,7 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
         st.markdown("#### 🏢 Services")
         for srv in services:
             c1, c2 = st.columns([4, 1])
-            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{srv}</div>", unsafe_allow_html=True)
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{esc(srv)}</div>", unsafe_allow_html=True)
             if c2.button("🗑️", key=f"ds_{srv}"):
                 delete_service(srv)
                 st.rerun()
@@ -60,7 +64,7 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
     with col_eng:
         for cat in categories_engins:
             c1, c2 = st.columns([4, 1])
-            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{cat}</div>", unsafe_allow_html=True)
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{esc(cat)}</div>", unsafe_allow_html=True)
             if c2.button("🗑️", key=f"dce_{cat}"):
                 delete_category_engin(cat)
                 st.rerun()
@@ -78,7 +82,7 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
     with col_sco:
         for cat in categories_scooters:
             c1, c2 = st.columns([4, 1])
-            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{cat}</div>", unsafe_allow_html=True)
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{esc(cat)}</div>", unsafe_allow_html=True)
             if c2.button("🗑️", key=f"dcs_{cat}"):
                 delete_category_scooter(cat)
                 st.rerun()
@@ -96,8 +100,8 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
     with col_liens:
         for lien in liens:
             c1, c2, c3 = st.columns([3, 2, 1])
-            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{lien.get('nom', '')}</div>", unsafe_allow_html=True)
-            c2.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['intro_color']}; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;'>{lien.get('url', '')}</div>", unsafe_allow_html=True)
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{esc(lien.get('nom', ''))}</div>", unsafe_allow_html=True)
+            c2.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['intro_color']}; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;'>{esc(lien.get('url', ''))}</div>", unsafe_allow_html=True)
             if c3.button("🗑️", key=f"dl_{lien.get('nom', '')}"):
                 delete_lien(lien.get('nom', ''))
                 st.rerun()

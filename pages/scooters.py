@@ -1,3 +1,4 @@
+import html
 import streamlit as st
 from datetime import datetime, timedelta
 from database import (
@@ -5,6 +6,9 @@ from database import (
     add_attribution_scooter, update_attribution_scooter, delete_attribution_scooter,
     add_intervention_scooter
 )
+
+
+esc = html.escape
 
 
 def render_scooters(page, t, scooters, attributions_scooters, categories_scooters, services, interventions_scooters):
@@ -36,7 +40,7 @@ def _page_saisir(t, scooters, categories_scooters):
     if scooters:
         for sco in scooters:
             col1, col2 = st.columns([5, 1])
-            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{sco['immatriculation']}</span> <span style='color: {t['label_color']};'>— {sco['type']} {sco['marque']}</span></div>", unsafe_allow_html=True)
+            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{esc(sco['immatriculation'])}</span> <span style='color: {t['label_color']};'>— {esc(sco['type'])} {esc(sco['marque'])}</span></div>", unsafe_allow_html=True)
             if col2.button("🗑️", key=f"del_sco_{sco['immatriculation']}"):
                 delete_scooter(sco['immatriculation'])
                 st.rerun()

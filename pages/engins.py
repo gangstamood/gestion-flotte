@@ -1,3 +1,4 @@
+import html
 import streamlit as st
 from datetime import datetime, timedelta
 from database import (
@@ -5,6 +6,9 @@ from database import (
     add_attribution_engin, update_attribution_engin, delete_attribution_engin,
     _is_engin_active_today, add_intervention_engin
 )
+
+
+esc = html.escape
 
 
 def render_engins(page, t, engins, attributions_engins, categories_engins, services, interventions_engins):
@@ -36,7 +40,7 @@ def _page_saisir(t, engins, categories_engins):
     if engins:
         for eng in engins:
             col1, col2 = st.columns([5, 1])
-            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{eng['numero_serie']}</span> <span style='color: {t['label_color']};'>— {eng['type']} {eng['marque']}</span></div>", unsafe_allow_html=True)
+            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{esc(eng['numero_serie'])}</span> <span style='color: {t['label_color']};'>— {esc(eng['type'])} {esc(eng['marque'])}</span></div>", unsafe_allow_html=True)
             if col2.button("🗑️", key=f"del_eng_{eng['numero_serie']}"):
                 delete_engin(eng['numero_serie'])
                 st.rerun()
@@ -110,7 +114,7 @@ def _page_attribuer(t, engins, attributions_engins, services):
 
         for eng in engins:
             num = eng.get('numero_serie', '')
-            eng_label = f"<b>{num}</b><br><small style='color:{ic}'>{eng.get('type','')} {eng.get('marque','')}</small>"
+            eng_label = f"<b>{esc(num)}</b><br><small style='color:{ic}'>{esc(eng.get('type',''))} {esc(eng.get('marque',''))}</small>"
             for pi, (periode, icon) in enumerate([('Matin', '🌅'), ('Après-midi', '🌇')]):
                 html += "<tr>"
                 if pi == 0:
@@ -120,7 +124,7 @@ def _page_attribuer(t, engins, attributions_engins, services):
                     svc = _get_slot(num, jour, periode)
                     if svc:
                         bg = svc_color.get(svc, '#6b7280')
-                        html += f"<td style='{td_s} background:{bg}; color:white; font-weight:500;'>{svc}</td>"
+                        html += f"<td style='{td_s} background:{bg}; color:white; font-weight:500;'>{esc(svc)}</td>"
                     else:
                         html += f"<td style='{td_s} color:{ic};'>—</td>"
                 html += "</tr>"
@@ -129,7 +133,7 @@ def _page_attribuer(t, engins, attributions_engins, services):
         st.markdown(html, unsafe_allow_html=True)
 
         legende = " ".join(
-            f"<span style='background:{svc_color.get(s,'#6b7280')}; color:white; padding:0.2rem 0.6rem; border-radius:12px; font-size:0.75rem; margin-right:0.3rem;'>{s}</span>"
+            f"<span style='background:{svc_color.get(s,'#6b7280')}; color:white; padding:0.2rem 0.6rem; border-radius:12px; font-size:0.75rem; margin-right:0.3rem;'>{esc(s)}</span>"
             for s in services
         )
         st.markdown(f"<div style='margin-top:0.6rem'>{legende}</div>", unsafe_allow_html=True)

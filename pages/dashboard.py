@@ -1,9 +1,12 @@
+import html
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 from database import (
     retourner_vehicule, retourner_scooter, retourner_engin, _is_engin_active_today
 )
+
+esc = html.escape
 
 
 def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters,
@@ -82,8 +85,8 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                     statut = "✅ Disponible"
                     couleur = "#10b981"
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{immat}</span>
-                    <span style='color:{t['label_color']};margin-left:1rem;'>{v.get('marque','')} — {v.get('type','')}</span>
+                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{esc(immat)}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{esc(v.get('marque',''))} — {esc(v.get('type',''))}</span>
                     <br/><span style='color:{couleur};font-weight:500;font-size:0.9rem;'>{statut}</span>
                 </div>""", unsafe_allow_html=True)
         else:
@@ -97,11 +100,11 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                 immat = a.get('immatriculation', '')
                 info_v = vh_map.get(immat, {})
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #ef4444;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:{t['h1_color']};font-weight:600;'>{immat}</span>
-                    <span style='color:{t['label_color']};margin-left:1rem;'>{info_v.get('marque','')} — {info_v.get('type','')}</span><br/>
-                    <span style='color:{t['text_color']};font-size:0.85rem;'>📅 Sorti le {a.get('date','')} à {a.get('heure','')}</span>
-                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>🏢 Service : {a.get('service','')}</span>
-                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>📆 Retour prévu : {a.get('date_retour_prevue','N/A')}</span>
+                    <span style='color:{t['h1_color']};font-weight:600;'>{esc(immat)}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{esc(info_v.get('marque',''))} — {esc(info_v.get('type',''))}</span><br/>
+                    <span style='color:{t['text_color']};font-size:0.85rem;'>📅 Sorti le {esc(a.get('date',''))} à {esc(a.get('heure',''))}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>🏢 Service : {esc(a.get('service',''))}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>📆 Retour prévu : {esc(a.get('date_retour_prevue','N/A'))}</span>
                 </div>""", unsafe_allow_html=True)
         else:
             st.info("Aucun véhicule distribué actuellement")
@@ -124,8 +127,8 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                     statut = "✅ Disponible"
                     couleur = "#10b981"
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{num}</span>
-                    <span style='color:{t['label_color']};margin-left:1rem;'>{e.get('marque','')} — {e.get('type','')}</span>
+                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{esc(num)}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{esc(e.get('marque',''))} — {esc(e.get('type',''))}</span>
                     <br/><span style='color:{couleur};font-weight:500;font-size:0.9rem;'>{statut}</span>
                 </div>""", unsafe_allow_html=True)
         else:
@@ -149,8 +152,8 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                     statut = "✅ Disponible"
                     couleur = "#10b981"
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{immat}</span>
-                    <span style='color:{t['label_color']};margin-left:1rem;'>{s.get('marque','')} — {s.get('type','')}</span>
+                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{esc(immat)}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{esc(s.get('marque',''))} — {esc(s.get('type',''))}</span>
                     <br/><span style='color:{couleur};font-weight:500;font-size:0.9rem;'>{statut}</span>
                 </div>""", unsafe_allow_html=True)
         else:
@@ -165,10 +168,10 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                 immat = i.get('immatriculation', '')
                 info_v = vh_map.get(immat, {})
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:{t['h1_color']};font-weight:600;'>{immat}</span>
-                    <span style='color:{t['label_color']};margin-left:1rem;'>{info_v.get('marque','')} — {info_v.get('type','')}</span><br/>
-                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
-                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
+                    <span style='color:{t['h1_color']};font-weight:600;'>{esc(immat)}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{esc(info_v.get('marque',''))} — {esc(info_v.get('type',''))}</span><br/>
+                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {esc(i.get('type',''))} — 📅 {esc(i.get('date',''))} à {esc(i.get('heure',''))}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {esc(i.get('commentaire',''))}</span>
                 </div>""", unsafe_allow_html=True)
         if interventions_en_cours_s:
             st.markdown("#### 🛵 Scooters")
@@ -176,10 +179,10 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                 immat = i.get('immatriculation', '')
                 info_s = sco_map.get(immat, {})
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:{t['h1_color']};font-weight:600;'>{immat}</span>
-                    <span style='color:{t['label_color']};margin-left:1rem;'>{info_s.get('marque','')} — {info_s.get('type','')}</span><br/>
-                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
-                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
+                    <span style='color:{t['h1_color']};font-weight:600;'>{esc(immat)}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{esc(info_s.get('marque',''))} — {esc(info_s.get('type',''))}</span><br/>
+                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {esc(i.get('type',''))} — 📅 {esc(i.get('date',''))} à {esc(i.get('heure',''))}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {esc(i.get('commentaire',''))}</span>
                 </div>""", unsafe_allow_html=True)
         if interventions_en_cours_e:
             st.markdown("#### 🚜 Engins")
@@ -187,10 +190,10 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                 num = i.get('numero_serie', '')
                 info_e = eng_map.get(num, {})
                 st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
-                    <span style='color:{t['h1_color']};font-weight:600;'>{num}</span>
-                    <span style='color:{t['label_color']};margin-left:1rem;'>{info_e.get('marque','')} — {info_e.get('type','')}</span><br/>
-                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {i.get('type','')} — 📅 {i.get('date','')} à {i.get('heure','')}</span>
-                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {i.get('commentaire','')}</span>
+                    <span style='color:{t['h1_color']};font-weight:600;'>{esc(num)}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{esc(info_e.get('marque',''))} — {esc(info_e.get('type',''))}</span><br/>
+                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {esc(i.get('type',''))} — 📅 {esc(i.get('date',''))} à {esc(i.get('heure',''))}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {esc(i.get('commentaire',''))}</span>
                 </div>""", unsafe_allow_html=True)
         if not interventions_en_cours_v and not interventions_en_cours_e and not interventions_en_cours_s:
             st.info("Aucune intervention en cours")

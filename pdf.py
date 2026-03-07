@@ -1,15 +1,47 @@
 import io
+import ipaddress
+import socket
+from urllib.parse import urlparse
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+
+
+def _validate_logo_url(url):
+    """Valide l'URL du logo pour prévenir les attaques SSRF."""
+    if not url:
+        return None
+    parsed = urlparse(url)
+    if parsed.scheme not in ('http', 'https'):
+        return None
+    hostname = parsed.hostname or ''
+    # Bloquer localhost et variantes
+    if hostname in ('localhost', '0.0.0.0', '::1', ''):
+        return None
+    try:
+        addr = ipaddress.ip_address(hostname)
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+            return None
+    except ValueError:
+        # C'est un hostname (pas une IP), résoudre pour vérifier
+        try:
+            resolved = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC)
+            for _, _, _, _, sockaddr in resolved:
+                addr = ipaddress.ip_address(sockaddr[0])
+                if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+                    return None
+        except socket.gaierror:
+            return None
+    return url
 
 
 def generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    if logo_url:
+    safe_logo_url = _validate_logo_url(logo_url)
+    if safe_logo_url:
         try:
-            c.drawImage(logo_url, 50, height - 100, width=100, height=80, preserveAspectRatio=True)
+            c.drawImage(safe_logo_url, 50, height - 100, width=100, height=80, preserveAspectRatio=True)
         except Exception:
             pass
     c.setFont("Helvetica-Bold", 24)
