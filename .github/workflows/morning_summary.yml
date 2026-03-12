@@ -2,7 +2,7 @@ name: Résumé matinal flotte
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # 7h00 heure française (UTC+1 hiver)
+    - cron: '0 5 * * *'  # 7h00 heure française (UTC+2 été)
   workflow_dispatch:       # Déclenchement manuel possible
 
 jobs:
