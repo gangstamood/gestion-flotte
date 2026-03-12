@@ -1,12 +1,103 @@
 import html
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from database import (
     retourner_vehicule, retourner_scooter, retourner_engin, _is_engin_active_today
 )
 
 esc = html.escape
+
+
+def _render_planning_engins(t, engins, attributions_engins, services):
+    st.markdown("### 📅 Planning Engins — Semaine")
+    if 'eng_sem_offset' not in st.session_state:
+        st.session_state['eng_sem_offset'] = 0
+
+    today_date = datetime.now().date()
+    lundi = today_date - timedelta(days=today_date.weekday())
+    semaine_debut = lundi + timedelta(weeks=st.session_state['eng_sem_offset'])
+    semaine_fin_nav = semaine_debut + timedelta(days=6)
+
+    col_nav1, col_nav2, col_nav3 = st.columns([1, 3, 1])
+    if col_nav1.button("← Préc.", key="dash_eng_prev"):
+        st.session_state['eng_sem_offset'] -= 1
+        st.rerun()
+    nav_color = t['h23_color']
+    col_nav2.markdown(
+        f"<h4 style='text-align:center; color:{nav_color}'>Semaine du {semaine_debut.strftime('%d/%m/%Y')} au {semaine_fin_nav.strftime('%d/%m/%Y')}</h4>",
+        unsafe_allow_html=True
+    )
+    if col_nav3.button("Suiv. →", key="dash_eng_next"):
+        st.session_state['eng_sem_offset'] += 1
+        st.rerun()
+
+    if not engins:
+        st.info("Aucun engin enregistré")
+        return
+
+    JOURS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+    jours_sem = [semaine_debut + timedelta(days=i) for i in range(7)]
+    _PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316']
+    svc_color = {s: _PALETTE[i % len(_PALETTE)] for i, s in enumerate(services)}
+
+    def _get_slot(num_serie, day, periode):
+        for a in attributions_engins:
+            if a.get('numero_serie') != num_serie or a.get('retourne'):
+                continue
+            try:
+                dd = datetime.strptime(a['date'], "%d/%m/%Y").date()
+                df_d = datetime.strptime(a.get('date_fin', a['date']), "%d/%m/%Y").date()
+                if dd <= day <= df_d:
+                    p = a.get('periode', 'Journée')
+                    if p == 'Journée' or p == periode:
+                        return a['service']
+            except Exception:
+                pass
+        return None
+
+    cb = t['card_border']
+    ib = t['input_bg']
+    hc = t['h23_color']
+    ic = t['intro_color']
+    th_s = f"padding:0.45rem 0.4rem; border:1px solid {cb}; text-align:center; background:{ib}; color:{hc}; font-weight:600; font-size:0.8rem;"
+    td_s = f"border:1px solid {cb}; text-align:center; padding:0.3rem 0.25rem; font-size:0.75rem;"
+    td_eng_s = f"{td_s} background:{ib}; color:{hc}; text-align:left; padding:0.4rem 0.5rem; min-width:110px;"
+    td_slot_s = f"{td_s} background:{ib}; color:{ic}; min-width:52px;"
+
+    planning_html = f"<div style='overflow-x:auto'><table style='width:100%; border-collapse:collapse;'><thead><tr>"
+    planning_html += f"<th style='{th_s} text-align:left; min-width:110px;'>Engin</th>"
+    planning_html += f"<th style='{th_s} min-width:52px;'>Slot</th>"
+    for i, jour in enumerate(jours_sem):
+        jour_color = '#f59e0b' if jour == today_date else hc
+        planning_html += f"<th style='{th_s} color:{jour_color}; min-width:88px;'>{JOURS_FR[i]}<br>{jour.strftime('%d/%m')}</th>"
+    planning_html += "</tr></thead><tbody>"
+
+    for eng in engins:
+        num = eng.get('numero_serie', '')
+        eng_label = f"<b>{esc(num)}</b><br><small style='color:{ic}'>{esc(eng.get('type',''))} {esc(eng.get('marque',''))}</small>"
+        for pi, (periode, icon) in enumerate([('Matin', '🌅'), ('Après-midi', '🌇')]):
+            planning_html += "<tr>"
+            if pi == 0:
+                planning_html += f"<td rowspan='2' style='{td_eng_s}'>{eng_label}</td>"
+            planning_html += f"<td style='{td_slot_s}'>{icon} {periode}</td>"
+            for jour in jours_sem:
+                svc = _get_slot(num, jour, periode)
+                if svc:
+                    bg = svc_color.get(svc, '#6b7280')
+                    planning_html += f"<td style='{td_s} background:{bg}; color:white; font-weight:500;'>{esc(svc)}</td>"
+                else:
+                    planning_html += f"<td style='{td_s} color:{ic};'>—</td>"
+            planning_html += "</tr>"
+
+    planning_html += "</tbody></table></div>"
+    st.markdown(planning_html, unsafe_allow_html=True)
+
+    legende = " ".join(
+        f"<span style='background:{svc_color.get(s,'#6b7280')}; color:white; padding:0.2rem 0.6rem; border-radius:12px; font-size:0.75rem; margin-right:0.3rem;'>{esc(s)}</span>"
+        for s in services
+    )
+    st.markdown(f"<div style='margin-top:0.6rem'>{legende}</div>", unsafe_allow_html=True)
 
 
 def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters,
@@ -197,6 +288,9 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                 </div>""", unsafe_allow_html=True)
         if not interventions_en_cours_v and not interventions_en_cours_e and not interventions_en_cours_s:
             st.info("Aucune intervention en cours")
+
+    st.markdown("---")
+    _render_planning_engins(t, engins, attributions_engins, services)
 
     st.markdown("---")
     st.markdown("### 🔍 Filtres")
