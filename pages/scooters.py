@@ -13,26 +13,39 @@ esc = html.escape
 
 def render_scooters(page, t, scooters, attributions_scooters, categories_scooters, services, interventions_scooters):
     if page == "🛵 Saisir un scooter":
-        _page_saisir(t, scooters, categories_scooters)
+        _page_saisir(t, scooters, categories_scooters, services)
     elif page == "🔧 Attribuer un scooter":
         _page_attribuer(t, scooters, attributions_scooters, services)
     elif page == "🔨 Interventions Scooters":
         _page_interventions(t, scooters, interventions_scooters)
 
 
-def _page_saisir(t, scooters, categories_scooters):
+def _page_saisir(t, scooters, categories_scooters, services):
     st.markdown("# 🛵 Nouveau Scooter")
     st.markdown("<p class='page-intro'>Ajouter un scooter à votre flotte</p>", unsafe_allow_html=True)
     with st.form("form_sco"):
+        st.markdown("**🛵 Informations scooter**")
         col1, col2 = st.columns(2)
         immat_sco = col1.text_input("Immatriculation *", placeholder="AB-123-CD")
         marque_sco = col2.text_input("Marque *", placeholder="Piaggio")
         type_sco = st.selectbox("Type *", categories_scooters)
+        st.markdown("**🔧 Attribution initiale**")
+        col3, col4 = st.columns(2)
+        service_sco = col3.selectbox("Service *", services)
+        date_retour_sco = col4.date_input("Date de retour prévue *", value=datetime.now() + timedelta(days=1))
+        col5, col6, col7 = st.columns(3)
+        date_s_sco = col5.date_input("Date de sortie", value=datetime.now())
+        heure_s_sco = col6.time_input("Heure de sortie", value=datetime.now().time())
+        casque_sco = col7.text_input("🪖 Casque attribué", placeholder="N° ou réf.")
         if st.form_submit_button("✅ Enregistrer", type="primary"):
             if immat_sco and marque_sco:
-                add_scooter(immat_sco, type_sco, marque_sco)
-                st.success(f"✅ {immat_sco} ajouté !")
-                st.rerun()
+                if date_retour_sco < date_s_sco:
+                    st.error("❌ La date de retour doit être après la date de sortie")
+                else:
+                    add_scooter(immat_sco, type_sco, marque_sco)
+                    add_attribution_scooter(immat_sco, service_sco, date_s_sco.strftime("%d/%m/%Y"), heure_s_sco.strftime("%H:%M"), date_retour_sco.strftime("%d/%m/%Y"), casque_sco)
+                    st.success(f"✅ {immat_sco} ajouté et attribué au service {service_sco} !")
+                    st.rerun()
             else:
                 st.error("❌ Champs requis")
     st.markdown("---")
