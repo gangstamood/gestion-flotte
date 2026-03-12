@@ -5,7 +5,7 @@ from database import (
     add_vehicule, delete_vehicule,
     add_attribution, update_attribution, delete_attribution,
     add_bon_carburant, update_bon_carburant, delete_bon_carburant,
-    add_intervention
+    add_intervention, AGENCES
 )
 from pdf import generer_pdf_bon
 
@@ -30,10 +30,12 @@ def _page_saisir(t, vehicules, categories):
         col1, col2 = st.columns(2)
         immat = col1.text_input("Immatriculation *", placeholder="AB-123-CD")
         marque = col2.text_input("Marque *", placeholder="Renault")
-        type_v = st.selectbox("Type *", categories)
+        col3, col4 = st.columns(2)
+        type_v = col3.selectbox("Type *", categories)
+        agence = col4.selectbox("Agence *", AGENCES)
         if st.form_submit_button("✅ Enregistrer", type="primary"):
             if immat and marque:
-                add_vehicule(immat, type_v, marque)
+                add_vehicule(immat, type_v, marque, agence)
                 st.success(f"✅ {immat} ajouté !")
                 st.rerun()
             else:
@@ -43,7 +45,9 @@ def _page_saisir(t, vehicules, categories):
     if vehicules:
         for vh in vehicules:
             col1, col2 = st.columns([5, 1])
-            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{esc(vh['immatriculation'])}</span> <span style='color: {t['label_color']};'>— {esc(vh['type'])} {esc(vh['marque'])}</span></div>", unsafe_allow_html=True)
+            agence_vh = vh.get('agence', '')
+            agence_str = f" · 📍 {esc(agence_vh)}" if agence_vh else ""
+            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{esc(vh['immatriculation'])}</span> <span style='color: {t['label_color']};'>— {esc(vh['type'])} {esc(vh['marque'])}{agence_str}</span></div>", unsafe_allow_html=True)
             if col2.button("🗑️", key=f"del_{vh['immatriculation']}"):
                 delete_vehicule(vh['immatriculation'])
                 st.rerun()
@@ -73,10 +77,14 @@ def _page_attribuer(t, vehicules, attributions, services):
     st.markdown("---")
     st.markdown("### 📜 Historique")
     if attributions:
+        vh_map = {v['immatriculation']: v for v in vehicules}
         for i, attr in enumerate(reversed(attributions)):
             idx = len(attributions) - 1 - i
             retourne_badge = "✅" if attr.get('retourne') else "🔑"
-            with st.expander(f"{retourne_badge} {attr.get('immatriculation', '')} → {attr.get('service', '')} ({attr.get('date', '')})"):
+            immat_attr = attr.get('immatriculation', '')
+            agence_attr = vh_map.get(immat_attr, {}).get('agence', '')
+            agence_label = f" · 📍 {agence_attr}" if agence_attr else ""
+            with st.expander(f"{retourne_badge} {immat_attr}{agence_label} → {attr.get('service', '')} ({attr.get('date', '')})"):
                 with st.form(f"edit_attr_vh_{idx}"):
                     col1, col2 = st.columns(2)
                     srv_val = attr.get('service', '')

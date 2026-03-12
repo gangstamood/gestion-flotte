@@ -95,10 +95,12 @@ def init_database():
 def get_vehicules():
     return read_sheet('vehicules')
 
-def add_vehicule(immat, type_v, marque):
+AGENCES = ["Morlaix", "Lorient", "Rennes", "Quimper", "Brest"]
+
+def add_vehicule(immat, type_v, marque, agence):
     vehicules = get_vehicules()
     if not any(v.get('immatriculation') == immat for v in vehicules):
-        vehicules.append({'immatriculation': immat, 'type': type_v, 'marque': marque})
+        vehicules.append({'immatriculation': immat, 'type': type_v, 'marque': marque, 'agence': agence})
         write_sheet('vehicules', vehicules)
 
 def delete_vehicule(immat):
