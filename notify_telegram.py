@@ -22,7 +22,8 @@ def load_secrets():
 
     # 1. Variables d'environnement (GitHub Actions)
     if 'TELEGRAM_BOT_TOKEN' in os.environ:
-        gcp_json = os.environ.get('GCP_SERVICE_ACCOUNT_JSON', '{}')
+        gcp_json = os.environ.get('GCP_SERVICE_ACCOUNT_JSON') or '{}'
+        print(f"GCP_SERVICE_ACCOUNT_JSON longueur: {len(gcp_json)} chars")
         return {
             'telegram': {
                 'bot_token': os.environ['TELEGRAM_BOT_TOKEN'],
