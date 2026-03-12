@@ -134,7 +134,10 @@ def main():
                "août", "septembre", "octobre", "novembre", "décembre"]
     date_label = f"{jours_fr[today.weekday()]} {today.day} {mois_fr[today.month - 1]} {today.year}"
 
-    lines = [f"🚗 <b>Résumé flotte — {date_label}</b>\n"]
+    lines = [
+        f"☀️ Bonjour Lutin ! Ton assistant de gestion est déjà sur le pont pendant que tu cherches encore ton café ☕\n",
+        f"Voici ton rapport du <b>{date_label}</b> :\n"
+    ]
 
     lines.append(f"🚗 <b>Véhicules sortis ({len(vh_actifs)})</b>")
     if vh_actifs:
@@ -182,6 +185,7 @@ def main():
         for alerte in alertes:
             lines.append(f"  {alerte}")
 
+    lines.append("\nBonne journée, chef ! 💪")
     message = "\n".join(lines)
 
     if send_telegram(message):
