@@ -125,9 +125,14 @@ def main():
     attr_sco = read_sheet(service, 'attributions_scooters')
     attr_eng = read_sheet(service, 'attributions_engins')
 
+    today_str = today.strftime("%d/%m/%Y")
     vh_actifs = [a for a in attr_vh if not a.get('retourne')]
     sco_actifs = [a for a in attr_sco if not a.get('retourne')]
     eng_actifs = [a for a in attr_eng if is_engin_active(a, today)]
+
+    vh_today = [a for a in attr_vh if a.get('date', '') == today_str]
+    sco_today = [a for a in attr_sco if a.get('date', '') == today_str]
+    eng_today = [a for a in attr_eng if a.get('date', '') == today_str]
 
     jours_fr = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
     mois_fr = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
@@ -149,28 +154,30 @@ def main():
         f"Voici ton rapport du <b>{date_label}</b> :\n"
     ]
 
-    lines.append(f"🚗 <b>Véhicules sortis ({len(vh_actifs)})</b>")
-    if vh_actifs:
-        for a in vh_actifs:
-            lines.append(f"  • {a['immatriculation']} — {a.get('service', '?')} (retour: {a.get('date_retour_prevue', '?')})")
-    else:
-        lines.append("  Aucun véhicule sorti")
+    lines.append("📅 <b>Prévus aujourd'hui</b>")
 
-    lines.append(f"\n🛵 <b>Scooters sortis ({len(sco_actifs)})</b>")
-    if sco_actifs:
-        for a in sco_actifs:
-            lines.append(f"  • {a['immatriculation']} — {a.get('service', '?')} (retour: {a.get('date_retour_prevue', '?')})")
+    lines.append(f"\n🚗 <b>Véhicules ({len(vh_today)})</b>")
+    if vh_today:
+        for a in vh_today:
+            lines.append(f"  • {a['immatriculation']} — {a.get('service', '?')} (retour prévu: {a.get('date_retour_prevue', '?')})")
     else:
-        lines.append("  Aucun scooter sorti")
+        lines.append("  Aucun véhicule prévu")
 
-    lines.append(f"\n🚜 <b>Engins actifs ({len(eng_actifs)})</b>")
-    if eng_actifs:
-        for a in eng_actifs:
+    lines.append(f"\n🛵 <b>Scooters ({len(sco_today)})</b>")
+    if sco_today:
+        for a in sco_today:
+            lines.append(f"  • {a['immatriculation']} — {a.get('service', '?')} (retour prévu: {a.get('date_retour_prevue', '?')})")
+    else:
+        lines.append("  Aucun scooter prévu")
+
+    lines.append(f"\n🚜 <b>Engins ({len(eng_today)})</b>")
+    if eng_today:
+        for a in eng_today:
             periode = a.get('periode', '')
-            suffix = f", {periode}" if periode else ""
-            lines.append(f"  • {a['numero_serie']} — {a.get('service', '?')} (fin: {a.get('date_fin', '?')}{suffix})")
+            suffix = f" — {periode}" if periode else ""
+            lines.append(f"  • {a['numero_serie']} — {a.get('service', '?')}{suffix} (fin: {a.get('date_fin', '?')})")
     else:
-        lines.append("  Aucun engin actif")
+        lines.append("  Aucun engin prévu")
 
     alertes = []
     for a in vh_actifs:
