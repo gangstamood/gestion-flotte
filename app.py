@@ -4,7 +4,8 @@ from auth import check_password
 from hamburger import inject_hamburger
 from database import (
     init_database, _load_all_sheets,
-    get_categories, get_services, get_categories_engins, get_categories_scooters
+    get_categories, get_services, get_categories_engins, get_categories_scooters,
+    get_fiches_vehicules
 )
 from sidebar import render_sidebar
 from pages.dashboard import render_dashboard
@@ -47,6 +48,7 @@ _cats_s = _all.get('categories_scooters', [])
 categories_scooters = [c.get('nom', '') for c in _cats_s if c.get('nom')] or get_categories_scooters()
 interventions_scooters = _all.get('interventions_scooters', [])
 liens = _all.get('liens', [])
+fiches_vehicules = _all.get('fiches_vehicules', [])
 
 # INITIALISATION SESSION STATE
 if 'page' not in st.session_state:
@@ -62,7 +64,7 @@ render_sidebar(t, attributions, attributions_scooters, attributions_engins, serv
 # ROUTEUR DE PAGES
 page = st.session_state.page
 
-VEHICULE_PAGES = ["➕ Saisir un véhicule", "🔧 Attribuer un véhicule", "⛽ Bons de Carburant", "🔨 Pannes & Interventions"]
+VEHICULE_PAGES = ["➕ Saisir un véhicule", "🔧 Attribuer un véhicule", "⛽ Bons de Carburant", "🔨 Pannes & Interventions", "📋 Fiche véhicule"]
 SCOOTER_PAGES = ["🛵 Saisir un scooter", "🔧 Attribuer un scooter", "🔨 Interventions Scooters"]
 ENGIN_PAGES = ["🚜 Saisir un engin", "🔧 Attribuer un engin", "🔨 Interventions Engins"]
 
@@ -71,7 +73,7 @@ if page == "📊 Dashboard":
                      engins, attributions_engins, interventions, interventions_scooters,
                      interventions_engins, services, liens)
 elif page in VEHICULE_PAGES:
-    render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions)
+    render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions, fiches_vehicules)
 elif page in SCOOTER_PAGES:
     render_scooters(page, t, scooters, attributions_scooters, categories_scooters, services, interventions_scooters)
 elif page in ENGIN_PAGES:

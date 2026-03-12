@@ -5,14 +5,14 @@ from database import (
     add_vehicule, delete_vehicule,
     add_attribution, update_attribution, delete_attribution,
     add_bon_carburant, update_bon_carburant, delete_bon_carburant,
-    add_intervention, AGENCES
+    add_intervention, AGENCES, save_fiche_vehicule
 )
 from pdf import generer_pdf_bon
 
 esc = html.escape
 
 
-def render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions):
+def render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions, fiches_vehicules):
     if page == "➕ Saisir un véhicule":
         _page_saisir(t, vehicules, categories)
     elif page == "🔧 Attribuer un véhicule":
@@ -21,6 +21,8 @@ def render_vehicules(page, t, vehicules, attributions, categories, services, bon
         _page_carburant(t, vehicules, attributions, services, bons_carburant)
     elif page == "🔨 Pannes & Interventions":
         _page_interventions(t, vehicules, interventions)
+    elif page == "📋 Fiche véhicule":
+        _page_fiche(t, vehicules, fiches_vehicules, interventions, bons_carburant)
 
 
 def _page_saisir(t, vehicules, categories):
@@ -224,3 +226,88 @@ def _page_interventions(t, vehicules, interventions):
             with st.expander(f"{emoji} {interv.get('immatriculation', '')} - {interv.get('type', '')} - {interv.get('date', '')}"):
                 st.write(f"**Type:** {interv.get('type', '')} | **Statut:** {statut}")
                 st.info(interv.get('commentaire', ''))
+
+
+def _page_fiche(t, vehicules, fiches_vehicules, interventions, bons_carburant):
+    st.markdown("# 📋 Fiche Véhicule")
+    st.markdown("<p class='page-intro'>Contrat, état des lieux et historique par véhicule</p>", unsafe_allow_html=True)
+
+    if not vehicules:
+        st.warning("⚠️ Aucun véhicule enregistré")
+        return
+
+    vh_options = [f"{v['immatriculation']} — {v.get('type', '')} {v.get('marque', '')} · 📍 {v.get('agence', '')}" for v in vehicules]
+    sel = st.selectbox("Sélectionner un véhicule", vh_options)
+    immat = sel.split(" — ")[0]
+    vh = next((v for v in vehicules if v['immatriculation'] == immat), {})
+    fiche = next((f for f in fiches_vehicules if f.get('immatriculation') == immat), {})
+
+    st.markdown(f"""
+    <div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 12px; padding: 1.2rem; margin: 1rem 0;'>
+        <span style='color: {t['h1_color']}; font-size: 1.3rem; font-weight: 700;'>{esc(immat)}</span>
+        <span style='color: {t['label_color']};'> — {esc(vh.get('type',''))} {esc(vh.get('marque',''))} · 📍 {esc(vh.get('agence',''))}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### 📄 Contrat & État des lieux")
+    with st.form("form_fiche"):
+        contrat_url = st.text_input("🔗 Lien contrat (OneDrive)", value=fiche.get('contrat_url', ''), placeholder="https://...")
+        photos_entree = st.text_area("📷 Photos état des lieux d'entrée (un lien par ligne)", value=fiche.get('photos_entree', '').replace(',', '\n'), height=100, placeholder="https://...")
+        photos_sortie = st.text_area("📷 Photos état des lieux de sortie (un lien par ligne)", value=fiche.get('photos_sortie', '').replace(',', '\n'), height=100, placeholder="https://...")
+        notes = st.text_area("📝 Notes", value=fiche.get('notes', ''), height=80)
+        if st.form_submit_button("💾 Enregistrer la fiche", type="primary"):
+            save_fiche_vehicule(
+                immat,
+                contrat_url,
+                ','.join([l.strip() for l in photos_entree.splitlines() if l.strip()]),
+                ','.join([l.strip() for l in photos_sortie.splitlines() if l.strip()]),
+                notes
+            )
+            st.success("✅ Fiche enregistrée !")
+            st.rerun()
+
+    if fiche.get('contrat_url'):
+        st.markdown(f"[📄 Voir le contrat]({fiche['contrat_url']})", unsafe_allow_html=False)
+
+    if fiche.get('photos_entree'):
+        st.markdown("**Photos entrée :**")
+        for url in fiche['photos_entree'].split(','):
+            if url.strip():
+                st.markdown(f"- [🔗 Photo]({url.strip()})")
+
+    if fiche.get('photos_sortie'):
+        st.markdown("**Photos sortie :**")
+        for url in fiche['photos_sortie'].split(','):
+            if url.strip():
+                st.markdown(f"- [🔗 Photo]({url.strip()})")
+
+    st.markdown("---")
+    st.markdown("### 🔨 Interventions")
+    vh_interventions = [i for i in interventions if i.get('immatriculation') == immat]
+    if vh_interventions:
+        for interv in vh_interventions:
+            statut = interv.get('statut', '')
+            emoji = "🔴" if statut == "En cours" else "✅" if statut == "Terminée" else "⏸️"
+            st.markdown(f"{emoji} **{interv.get('type', '')}** — {interv.get('date', '')} | {statut}")
+            if interv.get('commentaire'):
+                st.caption(interv['commentaire'])
+    else:
+        st.info("Aucune intervention pour ce véhicule")
+
+    st.markdown("---")
+    st.markdown("### ⛽ Bons de Carburant")
+    vh_bons = [b for b in bons_carburant if b.get('immatriculation') == immat]
+    if vh_bons:
+        cols = st.columns([2, 1, 1, 1, 1])
+        for col, label in zip(cols, ["N° Bon", "Date", "Carburant", "Volume (L)", "Montant (€)"]):
+            col.markdown(f"<small><b>{label}</b></small>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin: 0.25rem 0 0.5rem 0'>", unsafe_allow_html=True)
+        for bon in reversed(vh_bons):
+            c = st.columns([2, 1, 1, 1, 1])
+            c[0].markdown(f"<small>{esc(bon.get('numero_bon',''))}</small>", unsafe_allow_html=True)
+            c[1].markdown(f"<small>{esc(bon.get('date',''))}</small>", unsafe_allow_html=True)
+            c[2].markdown(f"<small>{esc(bon.get('type_carburant','-'))}</small>", unsafe_allow_html=True)
+            c[3].markdown(f"<small>{esc(bon.get('volume','-'))}</small>", unsafe_allow_html=True)
+            c[4].markdown(f"<small>{esc(bon.get('montant','-'))}</small>", unsafe_allow_html=True)
+    else:
+        st.info("Aucun bon de carburant pour ce véhicule")

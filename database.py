@@ -21,7 +21,7 @@ ALL_SHEET_NAMES = [
     'vehicules', 'attributions', 'categories', 'services', 'interventions',
     'carburant', 'engins', 'attributions_engins', 'categories_engins',
     'interventions_engins', 'scooters', 'attributions_scooters',
-    'categories_scooters', 'interventions_scooters', 'liens'
+    'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules'
 ]
 
 
@@ -106,6 +106,19 @@ def add_vehicule(immat, type_v, marque, agence):
 def delete_vehicule(immat):
     vehicules = [v for v in get_vehicules() if v.get('immatriculation') != immat]
     write_sheet('vehicules', vehicules)
+
+def get_fiches_vehicules():
+    return read_sheet('fiches_vehicules')
+
+def save_fiche_vehicule(immat, contrat_url, photos_entree, photos_sortie, notes):
+    fiches = get_fiches_vehicules()
+    existing = next((f for f in fiches if f.get('immatriculation') == immat), None)
+    data = {'immatriculation': immat, 'contrat_url': contrat_url, 'photos_entree': photos_entree, 'photos_sortie': photos_sortie, 'notes': notes}
+    if existing:
+        fiches = [data if f.get('immatriculation') == immat else f for f in fiches]
+    else:
+        fiches.append(data)
+    write_sheet('fiches_vehicules', fiches)
 
 def get_attributions():
     return read_sheet('attributions')

@@ -7,7 +7,8 @@ def render_sidebar(t, attributions, attributions_scooters, attributions_engins, 
         "➕ Saisir un véhicule",
         "🔧 Attribuer un véhicule",
         "⛽ Bons de Carburant",
-        "🔨 Pannes & Interventions"
+        "🔨 Pannes & Interventions",
+        "📋 Fiche véhicule"
     ]
     scooter_pages = [
         "🛵 Saisir un scooter",
