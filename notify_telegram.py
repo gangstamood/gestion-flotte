@@ -134,8 +134,18 @@ def main():
                "août", "septembre", "octobre", "novembre", "décembre"]
     date_label = f"{jours_fr[today.weekday()]} {today.day} {mois_fr[today.month - 1]} {today.year}"
 
+    salutations = [
+        "💪 Lundi, Lutin ! Ton assistant de gestion a survécu au week-end (contrairement à ta motivation). C'est parti !",
+        "🚀 Mardi déjà ! Ton assistant de gestion est là, fidèle au poste. Toi aussi j'espère...",
+        "🐪 Mercredi ! Mi-chemin, Lutin. Ton assistant de gestion est à la moitié de la semaine et toujours aussi vaillant ⚡",
+        "🎯 Jeudi ! Plus qu'un jour avant le vendredi. Ton assistant de gestion garde le cap, et toi ?",
+        "🎉 VENDREDI ! Ton assistant de gestion est en mode fête mais reste professionnel. La flotte ne se gère pas toute seule !",
+        "😴 Samedi matin, Lutin... Sérieusement ? Ton assistant de gestion bosse même le week-end, lui.",
+        "🛋️ Dimanche ! Ton assistant de gestion espère que tu es en pyjama. Voici quand même ton rapport (désolé) 🙏",
+    ]
+
     lines = [
-        f"☀️ Bonjour Lutin ! Ton assistant de gestion est déjà sur le pont pendant que tu cherches encore ton café ☕\n",
+        f"{salutations[today.weekday()]}\n",
         f"Voici ton rapport du <b>{date_label}</b> :\n"
     ]
 
