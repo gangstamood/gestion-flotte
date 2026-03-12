@@ -22,7 +22,7 @@ def render_vehicules(page, t, vehicules, attributions, categories, services, bon
     elif page == "🔨 Pannes & Interventions":
         _page_interventions(t, vehicules, interventions)
     elif page == "📋 Fiche véhicule":
-        _page_fiche(t, vehicules, fiches_vehicules, interventions, bons_carburant)
+        _page_fiche(t, vehicules, fiches_vehicules, interventions, bons_carburant, attributions)
 
 
 def _page_saisir(t, vehicules, categories):
@@ -228,7 +228,7 @@ def _page_interventions(t, vehicules, interventions):
                 st.info(interv.get('commentaire', ''))
 
 
-def _page_fiche(t, vehicules, fiches_vehicules, interventions, bons_carburant):
+def _page_fiche(t, vehicules, fiches_vehicules, interventions, bons_carburant, attributions=None):
     st.markdown("# 📋 Fiche Véhicule")
     st.markdown("<p class='page-intro'>Contrat, état des lieux et historique par véhicule</p>", unsafe_allow_html=True)
 
@@ -248,6 +248,21 @@ def _page_fiche(t, vehicules, fiches_vehicules, interventions, bons_carburant):
         <span style='color: {t['label_color']};'> — {esc(vh.get('type',''))} {esc(vh.get('marque',''))} · 📍 {esc(vh.get('agence',''))}</span>
     </div>
     """, unsafe_allow_html=True)
+
+    attr_active = next((a for a in (attributions or []) if a.get('immatriculation') == immat and not a.get('retourne')), None)
+    if attr_active:
+        st.markdown(f"""
+        <div style='background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.4); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;'>
+            <span style='color: #10b981; font-weight: 600;'>🔑 Actuellement attribué</span><br>
+            <span style='color: {t['label_color']};'>Service : <strong>{esc(attr_active.get('service','?'))}</strong> · Sorti le {esc(attr_active.get('date','?'))} · Retour prévu le {esc(attr_active.get('date_retour_prevue','?'))}</span>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div style='background: rgba(100,100,100,0.08); border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 1rem;'>
+            <span style='color: {t['label_color']};'>🟢 Véhicule disponible — aucune attribution en cours</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("### 📄 Contrat & État des lieux")
     with st.form("form_fiche"):
