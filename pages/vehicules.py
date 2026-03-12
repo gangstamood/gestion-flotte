@@ -14,7 +14,7 @@ esc = html.escape
 
 def render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions, fiches_vehicules):
     if page == "➕ Saisir un véhicule":
-        _page_saisir(t, vehicules, categories)
+        _page_saisir(t, vehicules, categories, services)
     elif page == "🔧 Attribuer un véhicule":
         _page_attribuer(t, vehicules, attributions, services)
     elif page == "⛽ Bons de Carburant":
@@ -25,21 +25,33 @@ def render_vehicules(page, t, vehicules, attributions, categories, services, bon
         _page_fiche(t, vehicules, fiches_vehicules, interventions, bons_carburant, attributions)
 
 
-def _page_saisir(t, vehicules, categories):
+def _page_saisir(t, vehicules, categories, services):
     st.markdown("# ➕ Nouveau Véhicule")
     st.markdown("<p class='page-intro'>Ajouter un véhicule à votre flotte</p>", unsafe_allow_html=True)
     with st.form("form_vh"):
+        st.markdown("**🚗 Informations véhicule**")
         col1, col2 = st.columns(2)
         immat = col1.text_input("Immatriculation *", placeholder="AB-123-CD")
         marque = col2.text_input("Marque *", placeholder="Renault")
         col3, col4 = st.columns(2)
         type_v = col3.selectbox("Type *", categories)
         agence = col4.selectbox("Agence *", AGENCES)
+        st.markdown("**🔧 Attribution initiale**")
+        col5, col6 = st.columns(2)
+        service = col5.selectbox("Service *", services)
+        date_retour = col6.date_input("Date de retour prévue *", value=datetime.now() + timedelta(days=1))
+        col7, col8 = st.columns(2)
+        date_s = col7.date_input("Date de sortie", value=datetime.now())
+        heure_s = col8.time_input("Heure de sortie", value=datetime.now().time())
         if st.form_submit_button("✅ Enregistrer", type="primary"):
             if immat and marque:
-                add_vehicule(immat, type_v, marque, agence)
-                st.success(f"✅ {immat} ajouté !")
-                st.rerun()
+                if date_retour < date_s:
+                    st.error("❌ La date de retour doit être après la date de sortie")
+                else:
+                    add_vehicule(immat, type_v, marque, agence)
+                    add_attribution(immat, service, date_s.strftime("%d/%m/%Y"), heure_s.strftime("%H:%M"), date_retour.strftime("%d/%m/%Y"))
+                    st.success(f"✅ {immat} ajouté et attribué au service {service} !")
+                    st.rerun()
             else:
                 st.error("❌ Champs requis")
     st.markdown("---")
