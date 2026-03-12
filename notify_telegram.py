@@ -15,15 +15,9 @@ from datetime import datetime
 
 def load_secrets():
     """Charge les secrets depuis les env vars ou secrets.toml."""
-    # Debug: affiche les clés d'env vars disponibles (sans les valeurs)
-    print("ENV VARS disponibles (clés):", [k for k in os.environ if k in (
-        'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'SPREADSHEET_ID', 'GCP_SERVICE_ACCOUNT_JSON'
-    )])
-
     # 1. Variables d'environnement (GitHub Actions)
     if 'TELEGRAM_BOT_TOKEN' in os.environ:
         gcp_json = os.environ.get('GCP_SERVICE_ACCOUNT_JSON') or '{}'
-        print(f"GCP_SERVICE_ACCOUNT_JSON longueur: {len(gcp_json)} chars")
         return {
             'telegram': {
                 'bot_token': os.environ['TELEGRAM_BOT_TOKEN'],
