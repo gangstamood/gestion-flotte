@@ -93,7 +93,14 @@ def main():
         type_norm = next((v for k, v in TYPE_MAP.items() if k in type_raw.upper()), type_raw)
         taille_clean = taille if taille and taille != 'nan' else ''
         fourches_clean = fourches.capitalize() if fourches and fourches != 'nan' else ''
-        marque = f"{taille_clean} · {fourches_clean}" if fourches_clean else taille_clean
+
+        if 'CHARIOT' in type_raw.upper():
+            marque = f"{taille_clean} · {fourches_clean}" if fourches_clean else taille_clean
+        elif 'NACELLE' in type_raw.upper():
+            subtype = next((s for s in ['4RM', 'BOOM'] if s in type_raw.upper()), '')
+            marque = f"{taille_clean} · {subtype}" if subtype else taille_clean
+        else:
+            marque = taille_clean
 
         engins_to_add.append({
             'numero_serie': engin_id,
