@@ -5,13 +5,14 @@ from hamburger import inject_hamburger
 from database import (
     init_database, _load_all_sheets,
     get_categories, get_services, get_categories_engins, get_categories_scooters,
-    get_fiches_vehicules
+    get_categories_golfettes, get_fiches_vehicules
 )
 from sidebar import render_sidebar
 from pages.dashboard import render_dashboard
 from pages.vehicules import render_vehicules
 from pages.scooters import render_scooters
 from pages.engins import render_engins
+from pages.golfettes import render_golfettes
 from pages.parametres import render_parametres
 from pages.distribution_clefs import render_distribution_clefs
 
@@ -50,6 +51,11 @@ categories_scooters = [c.get('nom', '') for c in _cats_s if c.get('nom')] or get
 interventions_scooters = _all.get('interventions_scooters', [])
 liens = _all.get('liens', [])
 fiches_vehicules = _all.get('fiches_vehicules', [])
+golfettes = _all.get('golfettes', [])
+attributions_golfettes = _all.get('attributions_golfettes', [])
+_cats_g = _all.get('categories_golfettes', [])
+categories_golfettes = [c.get('nom', '') for c in _cats_g if c.get('nom')] or get_categories_golfettes()
+interventions_golfettes = _all.get('interventions_golfettes', [])
 
 # INITIALISATION SESSION STATE
 if 'page' not in st.session_state:
@@ -58,11 +64,13 @@ if 'dashboard_detail' not in st.session_state:
     st.session_state.dashboard_detail = None
 if 'eng_sem_offset' not in st.session_state:
     st.session_state.eng_sem_offset = 0
+if 'golf_sem_offset' not in st.session_state:
+    st.session_state.golf_sem_offset = 0
 if '_fk' not in st.session_state:
     st.session_state['_fk'] = 0
 
 # SIDEBAR
-render_sidebar(t, attributions, attributions_scooters, attributions_engins, services)
+render_sidebar(t, attributions, attributions_scooters, attributions_engins, services, attributions_golfettes)
 
 # ROUTEUR DE PAGES
 page = st.session_state.page
@@ -70,18 +78,22 @@ page = st.session_state.page
 VEHICULE_PAGES = ["➕ Saisir un véhicule", "🔧 Attribuer un véhicule", "⛽ Bons de Carburant", "🔨 Pannes & Interventions", "📋 Fiche véhicule"]
 SCOOTER_PAGES = ["🛵 Saisir un scooter", "🔧 Attribuer un scooter", "🔨 Interventions Scooters"]
 ENGIN_PAGES = ["📊 Vue Engins", "🚜 Saisir un engin", "🔧 Attribuer un engin", "🔨 Interventions Engins"]
+GOLFETTE_PAGES = ["📊 Vue Golfettes", "⛳ Saisir une golfette", "🔧 Attribuer une golfette", "🔨 Interventions Golfettes"]
 
 if page == "📊 Dashboard":
     render_dashboard(t, vehicules, attributions, scooters, attributions_scooters,
                      engins, attributions_engins, interventions, interventions_scooters,
-                     interventions_engins, services, liens)
+                     interventions_engins, services, liens,
+                     golfettes, attributions_golfettes, interventions_golfettes)
 elif page == "🔑 Distribution Clés":
-    render_distribution_clefs(t, engins, vehicules, scooters)
+    render_distribution_clefs(t, engins, vehicules, scooters, golfettes)
 elif page in VEHICULE_PAGES:
     render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions, fiches_vehicules)
 elif page in SCOOTER_PAGES:
     render_scooters(page, t, scooters, attributions_scooters, categories_scooters, services, interventions_scooters)
 elif page in ENGIN_PAGES:
     render_engins(page, t, engins, attributions_engins, categories_engins, services, interventions_engins)
+elif page in GOLFETTE_PAGES:
+    render_golfettes(page, t, golfettes, attributions_golfettes, categories_golfettes, services, interventions_golfettes)
 elif page == "⚙️ Paramètres":
-    render_parametres(t, categories, services, categories_engins, categories_scooters, liens)
+    render_parametres(t, categories, services, categories_engins, categories_scooters, categories_golfettes, liens)

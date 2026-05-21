@@ -6,6 +6,7 @@ from database import (
     add_service, delete_service,
     add_category_engin, delete_category_engin,
     add_category_scooter, delete_category_scooter,
+    add_category_golfette, delete_category_golfette,
     add_lien, delete_lien
 )
 
@@ -13,7 +14,7 @@ from database import (
 esc = html.escape
 
 
-def render_parametres(t, categories, services, categories_engins, categories_scooters, liens):
+def render_parametres(t, categories, services, categories_engins, categories_scooters, categories_golfettes, liens):
     st.markdown("# ⚙️ Paramètres")
     st.markdown("<p class='page-intro'>Configurer l'application</p>", unsafe_allow_html=True)
 
@@ -94,6 +95,25 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
         if c2.button("➕", key="acs", type="primary"):
             if nv_cat_sco:
                 add_category_scooter(nv_cat_sco)
+                st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
+                st.rerun()
+
+    st.markdown("---")
+    st.markdown("### ⛳ Golfettes")
+    st.markdown("#### 🏷️ Catégories Golfettes")
+    col_golf = st.columns(2)[0]
+    with col_golf:
+        for cat in categories_golfettes:
+            c1, c2 = st.columns([4, 1])
+            c1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; color: {t['h23_color']};'>{esc(cat)}</div>", unsafe_allow_html=True)
+            if c2.button("🗑️", key=f"dcg_{cat}"):
+                delete_category_golfette(cat)
+                st.rerun()
+        c1, c2 = st.columns([3, 1])
+        nv_cat_golf = c1.text_input("Nouvelle catégorie golfette", key=f"nv_cat_golf_{st.session_state.get('_fk',0)}", label_visibility="collapsed", placeholder="Nouvelle catégorie golfette...")
+        if c2.button("➕", key="acg", type="primary"):
+            if nv_cat_golf:
+                add_category_golfette(nv_cat_golf)
                 st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                 st.rerun()
 

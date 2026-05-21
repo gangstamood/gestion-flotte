@@ -22,7 +22,8 @@ ALL_SHEET_NAMES = [
     'carburant', 'engins', 'attributions_engins', 'categories_engins',
     'interventions_engins', 'scooters', 'attributions_scooters',
     'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules',
-    'distribution_clefs'
+    'distribution_clefs', 'golfettes', 'attributions_golfettes',
+    'categories_golfettes', 'interventions_golfettes'
 ]
 
 DISTRIB_EXT_ID = "1lHvCjEL-KZ0llBPKiZrWocOcHlcAoQkW5d72KShi1GY"
@@ -83,7 +84,7 @@ def init_database():
     try:
         sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
         existing_sheets = [s['properties']['title'] for s in sheet_metadata['sheets']]
-        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules', 'distribution_clefs']
+        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules', 'distribution_clefs', 'golfettes', 'attributions_golfettes', 'categories_golfettes', 'interventions_golfettes']
         for sheet_name in required_sheets:
             if sheet_name not in existing_sheets:
                 sheets_service.spreadsheets().batchUpdate(
@@ -459,6 +460,73 @@ def _write_distrib_externe(categorie, identifiant, nom, commentaire, dt):
         return sheet_name, row_num
     except Exception:
         return '', None
+
+# CRUD GOLFETTES
+def get_golfettes():
+    return read_sheet('golfettes')
+
+def add_golfette(num_serie, type_g, marque):
+    golfettes = get_golfettes()
+    if not any(g.get('numero_serie') == num_serie for g in golfettes):
+        golfettes.append({'numero_serie': num_serie, 'type': type_g, 'marque': marque})
+        write_sheet('golfettes', golfettes)
+
+def delete_golfette(num_serie):
+    golfettes = [g for g in get_golfettes() if g.get('numero_serie') != num_serie]
+    write_sheet('golfettes', golfettes)
+
+def get_attributions_golfettes():
+    return read_sheet('attributions_golfettes')
+
+def add_attribution_golfette(num_serie, service, date_debut, date_fin, periode):
+    attributions = get_attributions_golfettes()
+    attributions.append({'numero_serie': num_serie, 'service': service, 'date': date_debut, 'date_fin': date_fin, 'periode': periode, 'retourne': ''})
+    write_sheet('attributions_golfettes', attributions)
+
+def retourner_golfette(num_serie):
+    attributions = get_attributions_golfettes()
+    for attr in reversed(attributions):
+        if attr.get('numero_serie') == num_serie and not attr.get('retourne'):
+            attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+            break
+    write_sheet('attributions_golfettes', attributions)
+
+def update_attribution_golfette(idx, data):
+    attributions = get_attributions_golfettes()
+    if 0 <= idx < len(attributions):
+        attributions[idx].update(data)
+        write_sheet('attributions_golfettes', attributions)
+
+def delete_attribution_golfette(idx):
+    attributions = get_attributions_golfettes()
+    if 0 <= idx < len(attributions):
+        attributions.pop(idx)
+        write_sheet('attributions_golfettes', attributions)
+
+def get_categories_golfettes():
+    cats = read_sheet('categories_golfettes')
+    if not cats:
+        defaults = [{'nom': c} for c in ["Électrique", "Thermique", "Autre"]]
+        write_sheet('categories_golfettes', defaults)
+        return ["Électrique", "Thermique", "Autre"]
+    return [c.get('nom', '') for c in cats if c.get('nom')]
+
+def add_category_golfette(nom):
+    cats = get_categories_golfettes()
+    if nom not in cats:
+        write_sheet('categories_golfettes', [{'nom': c} for c in cats + [nom]])
+
+def delete_category_golfette(nom):
+    write_sheet('categories_golfettes', [{'nom': c} for c in get_categories_golfettes() if c != nom])
+
+def get_interventions_golfettes():
+    return read_sheet('interventions_golfettes')
+
+def add_intervention_golfette(num_serie, type_i, date, heure, comm, statut):
+    interventions = get_interventions_golfettes()
+    interventions.append({'numero_serie': num_serie, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut})
+    write_sheet('interventions_golfettes', interventions)
+
 
 def _cocher_retour_externe(entry):
     try:

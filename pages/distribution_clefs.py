@@ -9,7 +9,7 @@ from database import (
 esc = html.escape
 
 
-def render_distribution_clefs(t, engins, vehicules, scooters):
+def render_distribution_clefs(t, engins, vehicules, scooters, golfettes=None):
     st.markdown("# 🔑 Distribution des Clés")
     st.markdown("<p class='page-intro'>Traçabilité des remises et retours de clés</p>", unsafe_allow_html=True)
 
@@ -27,7 +27,7 @@ def render_distribution_clefs(t, engins, vehicules, scooters):
     st.markdown("---")
     st.markdown("### ➕ Distribuer une clé")
 
-    tab_engin, tab_vehicule = st.tabs(["🚜 Engins", "🚗 Véhicules"])
+    tab_engin, tab_vehicule, tab_golfette = st.tabs(["🚜 Engins", "🚗 Véhicules", "⛳ Golfettes"])
 
     with tab_engin:
         if engins:
@@ -69,6 +69,27 @@ def render_distribution_clefs(t, engins, vehicules, scooters):
         else:
             st.info("Aucun véhicule enregistré — ajoutez-en depuis ➕ Saisir un véhicule")
 
+    with tab_golfette:
+        golfettes = golfettes or []
+        if golfettes:
+            with st.form(f"form_distrib_golfette_{st.session_state.get('_fk',0)}"):
+                options_g = [f"{g['numero_serie']} — {g['type']} {g['marque']}" for g in golfettes]
+                golf_sel = st.selectbox("Golfette *", options_g)
+                col_a, col_b = st.columns(2)
+                nom_g = col_a.text_input("Nom du preneur *", placeholder="Prénom NOM")
+                commentaire_g = col_b.text_input("Commentaire", placeholder="Optionnel")
+                if st.form_submit_button("🔑 Distribuer", type="primary"):
+                    if nom_g.strip():
+                        identifiant_g = golf_sel.split(" — ")[0]
+                        add_distribution_clef('golfette', identifiant_g, nom_g.strip(), commentaire_g)
+                        st.success(f"✅ Clé {identifiant_g} distribuée à {nom_g}")
+                        st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
+                        st.rerun()
+                    else:
+                        st.error("❌ Le nom du preneur est requis")
+        else:
+            st.info("Aucune golfette enregistrée — ajoutez-en depuis ⛳ Saisir une golfette")
+
     if en_circulation:
         st.markdown("---")
         st.markdown("### 🔑 Clés en circulation")
@@ -76,7 +97,7 @@ def render_distribution_clefs(t, engins, vehicules, scooters):
             if c.get('retour_clef'):
                 continue
             idx = clefs.index(c)
-            cat_icon = "🚜" if c.get('categorie') == 'engin' else "🚗" if c.get('categorie') == 'vehicule' else "🛺"
+            cat_icon = "🚜" if c.get('categorie') == 'engin' else "🚗" if c.get('categorie') == 'vehicule' else "⛳" if c.get('categorie') == 'golfette' else "🔑"
             col_info, col_btn = st.columns([5, 1])
             col_info.markdown(
                 f"<div style='background:{t['card_bg']};border:1px solid {t['card_border']};"
@@ -99,7 +120,7 @@ def render_distribution_clefs(t, engins, vehicules, scooters):
         with st.expander(f"📋 Historique — {len(rendues)} clé(s) rendue(s)"):
             for i, c in enumerate(reversed(rendues)):
                 idx = len(clefs) - 1 - clefs[::-1].index(c)
-                cat_icon = "🚜" if c.get('categorie') == 'engin' else "🚗" if c.get('categorie') == 'vehicule' else "🛺"
+                cat_icon = "🚜" if c.get('categorie') == 'engin' else "🚗" if c.get('categorie') == 'vehicule' else "⛳" if c.get('categorie') == 'golfette' else "🔑"
                 col_h, col_d = st.columns([5, 1])
                 col_h.markdown(
                     f"<div style='background:{t['input_bg']};border:1px solid {t['card_border']};"

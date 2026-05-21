@@ -1,8 +1,8 @@
 import streamlit as st
-from alertes import verifier_alertes, verifier_alertes_scooters, verifier_alertes_engins
+from alertes import verifier_alertes, verifier_alertes_scooters, verifier_alertes_engins, verifier_alertes_golfettes
 
 
-def render_sidebar(t, attributions, attributions_scooters, attributions_engins, services):
+def render_sidebar(t, attributions, attributions_scooters, attributions_engins, services, attributions_golfettes=None):
     vehicule_pages = [
         "➕ Saisir un véhicule",
         "🔧 Attribuer un véhicule",
@@ -21,6 +21,12 @@ def render_sidebar(t, attributions, attributions_scooters, attributions_engins, 
         "🚜 Saisir un engin",
         "🔧 Attribuer un engin",
         "🔨 Interventions Engins"
+    ]
+    golfette_pages = [
+        "📊 Vue Golfettes",
+        "⛳ Saisir une golfette",
+        "🔧 Attribuer une golfette",
+        "🔨 Interventions Golfettes"
     ]
 
     def nav_to(p):
@@ -59,6 +65,13 @@ def render_sidebar(t, attributions, attributions_scooters, attributions_engins, 
                           type="primary" if st.session_state.page == p else "secondary",
                           on_click=nav_to, args=(p,))
 
+        with st.expander("⛳ Golfettes", expanded=st.session_state.page in golfette_pages):
+            for p in golfette_pages:
+                label = p.split(" ", 1)[1] if " " in p else p
+                st.button(label, key=f"nav_{p}", use_container_width=True,
+                          type="primary" if st.session_state.page == p else "secondary",
+                          on_click=nav_to, args=(p,))
+
         st.button("⚙️ Paramètres", key="nav_params", use_container_width=True,
                   type="primary" if st.session_state.page == "⚙️ Paramètres" else "secondary",
                   on_click=nav_to, args=("⚙️ Paramètres",))
@@ -81,6 +94,16 @@ def render_sidebar(t, attributions, attributions_scooters, attributions_engins, 
             st.markdown(f"<div style='background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 1rem; margin-top: 0.5rem;'><p style='color: #f59e0b; font-weight: 600; margin: 0;'>🚜 {len(alertes_engins)} engin(s) à retourner</p></div>", unsafe_allow_html=True)
             with st.expander("Voir les alertes engins"):
                 for a in alertes_engins:
+                    if a['jours_retard'] > 0:
+                        st.error(f"🔴 {a['numero_serie']} - {a['service']} (retard {a['jours_retard']}j, fin prévue {a['date_fin']})")
+                    else:
+                        st.warning(f"🟠 {a['numero_serie']} - {a['service']} (fin prévue {a['date_fin']})")
+
+        alertes_golfettes = verifier_alertes_golfettes(attributions_golfettes or [])
+        if alertes_golfettes:
+            st.markdown(f"<div style='background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 1rem; margin-top: 0.5rem;'><p style='color: #10b981; font-weight: 600; margin: 0;'>⛳ {len(alertes_golfettes)} golfette(s) à retourner</p></div>", unsafe_allow_html=True)
+            with st.expander("Voir les alertes golfettes"):
+                for a in alertes_golfettes:
                     if a['jours_retard'] > 0:
                         st.error(f"🔴 {a['numero_serie']} - {a['service']} (retard {a['jours_retard']}j, fin prévue {a['date_fin']})")
                     else:

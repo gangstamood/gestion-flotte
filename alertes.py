@@ -34,8 +34,8 @@ def verifier_alertes_scooters(attributions):
     return _verifier_alertes_date_retour(attributions)
 
 
-def verifier_alertes_engins(attributions):
-    """Engins dont la date de fin de période est dépassée et non retournés."""
+def _verifier_alertes_date_fin(attributions, id_key='numero_serie'):
+    """Générique: engins/golfettes dont date_fin est dépassée et non retournés."""
     alertes = []
     today = datetime.now().date()
     for attr in attributions:
@@ -48,20 +48,19 @@ def verifier_alertes_engins(attributions):
                 if date_fin < today:
                     jours_retard = (today - date_fin).days
                     alertes.append({
-                        'numero_serie': attr['numero_serie'],
+                        'numero_serie': attr[id_key],
                         'service': attr['service'],
                         'date_fin': date_fin_str,
                         'jours_retard': jours_retard,
                     })
             else:
-                # Rétrocompat : anciennes attributions sans date_fin
                 date_attrib = datetime.strptime(
                     f"{attr['date']} {attr.get('heure', '00:00')}", "%d/%m/%Y %H:%M"
                 )
                 duree = datetime.now() - date_attrib
                 if duree > timedelta(hours=8):
                     alertes.append({
-                        'numero_serie': attr['numero_serie'],
+                        'numero_serie': attr[id_key],
                         'service': attr['service'],
                         'date_fin': attr['date'],
                         'jours_retard': 0,
@@ -69,3 +68,13 @@ def verifier_alertes_engins(attributions):
         except Exception:
             continue
     return alertes
+
+
+def verifier_alertes_engins(attributions):
+    """Engins dont la date de fin de période est dépassée et non retournés."""
+    return _verifier_alertes_date_fin(attributions)
+
+
+def verifier_alertes_golfettes(attributions):
+    """Golfettes dont la date de fin de période est dépassée et non retournées."""
+    return _verifier_alertes_date_fin(attributions)

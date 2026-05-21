@@ -3,7 +3,8 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from database import (
-    retourner_vehicule, retourner_scooter, retourner_engin, _is_engin_active_today
+    retourner_vehicule, retourner_scooter, retourner_engin, retourner_golfette,
+    _is_engin_active_today
 )
 
 esc = html.escape
@@ -102,7 +103,8 @@ def _render_planning_engins(t, engins, attributions_engins, services):
 
 def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters,
                      engins, attributions_engins, interventions, interventions_scooters,
-                     interventions_engins, services, liens):
+                     interventions_engins, services, liens,
+                     golfettes=None, attributions_golfettes=None, interventions_golfettes=None):
     st.markdown("# 📊 Tableau de Bord")
     st.markdown("<p class='page-intro'>Vue d'ensemble de votre flotte</p>", unsafe_allow_html=True)
 
@@ -114,27 +116,36 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                 st.link_button(f"📄 {lien.get('nom', '')}", lien.get('url', ''), use_container_width=True)
         st.markdown("---")
 
+    golfettes = golfettes or []
+    attributions_golfettes = attributions_golfettes or []
+    interventions_golfettes = interventions_golfettes or []
+
     nb_vehicules = len(vehicules)
     sorties_en_cours = [a for a in attributions if not a.get('retourne')]
     nb_en_sortie = len(sorties_en_cours)
     nb_scooters = len(scooters)
     nb_engins = len(engins)
+    nb_golfettes = len(golfettes)
     interventions_en_cours_v = [i for i in interventions if i.get('statut') == "En cours"]
     interventions_en_cours_e = [i for i in interventions_engins if i.get('statut') == "En cours"]
     interventions_en_cours_s = [i for i in interventions_scooters if i.get('statut') == "En cours"]
-    nb_interventions = len(interventions_en_cours_v) + len(interventions_en_cours_e) + len(interventions_en_cours_s)
+    interventions_en_cours_g = [i for i in interventions_golfettes if i.get('statut') == "En cours"]
+    nb_interventions = len(interventions_en_cours_v) + len(interventions_en_cours_e) + len(interventions_en_cours_s) + len(interventions_en_cours_g)
 
     vh_map = {v['immatriculation']: v for v in vehicules}
     sco_map = {s['immatriculation']: s for s in scooters}
     eng_map = {e['numero_serie']: e for e in engins}
+    golf_map = {g['numero_serie']: g for g in golfettes}
     sorties_set_vh = {a['immatriculation'] for a in attributions if not a.get('retourne')}
     sorties_set_sco = {a['immatriculation'] for a in attributions_scooters if not a.get('retourne')}
     sorties_set_eng = {a['numero_serie'] for a in attributions_engins if _is_engin_active_today(a)}
+    sorties_set_golf = {a['numero_serie'] for a in attributions_golfettes if _is_engin_active_today(a)}
     interv_set_vh = {i['immatriculation'] for i in interventions if i.get('statut') == "En cours"}
     interv_set_sco = {i['immatriculation'] for i in interventions_scooters if i.get('statut') == "En cours"}
     interv_set_eng = {i['numero_serie'] for i in interventions_engins if i.get('statut') == "En cours"}
+    interv_set_golf = {i['numero_serie'] for i in interventions_golfettes if i.get('statut') == "En cours"}
 
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
         st.metric("🚙 Véhicules", nb_vehicules)
         if st.button("📋 Détails", key="btn_vehicules", use_container_width=True):
@@ -152,6 +163,10 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
         if st.button("📋 Détails", key="btn_engins", use_container_width=True):
             st.session_state['dashboard_detail'] = 'engins' if st.session_state.get('dashboard_detail') != 'engins' else None
     with col5:
+        st.metric("⛳ Golfettes", nb_golfettes)
+        if st.button("📋 Détails", key="btn_golfettes", use_container_width=True):
+            st.session_state['dashboard_detail'] = 'golfettes' if st.session_state.get('dashboard_detail') != 'golfettes' else None
+    with col6:
         st.metric("🔨 Interventions", nb_interventions)
         if st.button("📋 Détails", key="btn_interventions", use_container_width=True):
             st.session_state['dashboard_detail'] = 'interventions' if st.session_state.get('dashboard_detail') != 'interventions' else None
@@ -225,6 +240,31 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
         else:
             st.info("Aucun engin enregistré")
 
+    elif detail == 'golfettes':
+        st.markdown("---")
+        st.markdown("### ⛳ Détail des Golfettes")
+        if golfettes:
+            for g in golfettes:
+                num = g.get('numero_serie', '')
+                en_sortie = num in sorties_set_golf
+                en_interv = num in interv_set_golf
+                if en_interv:
+                    statut = "🔧 En intervention"
+                    couleur = "#f59e0b"
+                elif en_sortie:
+                    statut = "🔑 Distribuée"
+                    couleur = "#ef4444"
+                else:
+                    statut = "✅ Disponible"
+                    couleur = "#10b981"
+                st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid {couleur};border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
+                    <span style='color:{t['h1_color']};font-weight:600;font-size:1rem;'>{esc(num)}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{esc(g.get('marque',''))} — {esc(g.get('type',''))}</span>
+                    <br/><span style='color:{couleur};font-weight:500;font-size:0.9rem;'>{statut}</span>
+                </div>""", unsafe_allow_html=True)
+        else:
+            st.info("Aucune golfette enregistrée")
+
     elif detail == 'scooters':
         st.markdown("---")
         st.markdown("### 🛵 Détail des Scooters")
@@ -286,7 +326,18 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
                     <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {esc(i.get('type',''))} — 📅 {esc(i.get('date',''))} à {esc(i.get('heure',''))}</span>
                     <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {esc(i.get('commentaire',''))}</span>
                 </div>""", unsafe_allow_html=True)
-        if not interventions_en_cours_v and not interventions_en_cours_e and not interventions_en_cours_s:
+        if interventions_en_cours_g:
+            st.markdown("#### ⛳ Golfettes")
+            for i in interventions_en_cours_g:
+                num = i.get('numero_serie', '')
+                info_g = golf_map.get(num, {})
+                st.markdown(f"""<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>
+                    <span style='color:{t['h1_color']};font-weight:600;'>{esc(num)}</span>
+                    <span style='color:{t['label_color']};margin-left:1rem;'>{esc(info_g.get('marque',''))} — {esc(info_g.get('type',''))}</span><br/>
+                    <span style='color:{t['text_color']};font-size:0.85rem;'>🔧 {esc(i.get('type',''))} — 📅 {esc(i.get('date',''))} à {esc(i.get('heure',''))}</span>
+                    <span style='color:{t['text_color']};font-size:0.85rem;margin-left:1rem;'>💬 {esc(i.get('commentaire',''))}</span>
+                </div>""", unsafe_allow_html=True)
+        if not interventions_en_cours_v and not interventions_en_cours_e and not interventions_en_cours_s and not interventions_en_cours_g:
             st.info("Aucune intervention en cours")
 
     st.markdown("---")
@@ -454,3 +505,16 @@ def render_dashboard(t, vehicules, attributions, scooters, attributions_scooters
             st.rerun()
     else:
         st.info("Aucun engin distribué")
+
+    st.markdown("---")
+    st.markdown("### 🔙 Retourner une Golfette")
+    sortis_golf_dash = [a for a in attributions_golfettes if _is_engin_active_today(a)]
+    if sortis_golf_dash:
+        col_r1, col_r2 = st.columns([3, 1])
+        golf_ret_dash = col_r1.selectbox("Golfette", [f"{a['numero_serie']} - {a['service']}" for a in sortis_golf_dash])
+        if col_r2.button("✅ Retourner", type="primary", key="ret_golf_dash"):
+            retourner_golfette(golf_ret_dash.split(" - ")[0])
+            st.success("✅ Retournée !")
+            st.rerun()
+    else:
+        st.info("Aucune golfette distribuée")
