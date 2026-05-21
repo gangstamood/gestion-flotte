@@ -211,7 +211,7 @@ def render_planning_wlg(t, engins, attributions_engins):
                 f"<th style='{th} width:65px;'>ID</th>"
                 f"<th style='{th} width:90px;'>N° loueur</th>"
                 f"<th style='{th} width:130px;'>Tonnage · Fourches</th>"
-                f"<th style='{th}'>Zone assignée</th>"
+                f"<th style='{th}'>Équipe</th>"
                 f"<th style='{th}'>Statut clé</th>"
                 f"</tr></thead><tbody>"
             )
@@ -315,7 +315,12 @@ def render_planning_wlg(t, engins, attributions_engins):
                 prev_g = g
 
             out_today, _, _ = _clef_status(num, clefs)
-            grid += f"<tr><td style='{td_eng}'>{esc(num)}</td>"
+            marque = eng.get('marque', '')
+            engin_cell = (
+                f"<span style='font-weight:700;font-size:0.9rem;color:{hc};'>{esc(num)}</span>"
+                + (f"<br><span style='font-weight:400;font-size:0.72rem;color:{ic};'>{esc(marque)}</span>" if marque else "")
+            )
+            grid += f"<tr><td style='{td_eng}'>{engin_cell}</td>"
             for jour in jours_sem:
                 is_today_col = jour == today
                 zone = _get_zone_for_day(num, jour, attributions_engins)

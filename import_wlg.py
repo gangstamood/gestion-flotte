@@ -1,12 +1,12 @@
 """
 Import WLG26 — chariots, télescopiques, nacelles + attributions depuis le planning Excel.
-Usage : python import_wlg.py
+Lit chaque cellule (jour × engin) pour créer une attribution par jour.
+Usage : .venv/bin/python3 import_wlg.py
 """
 import re
 import os
 import pandas as pd
 import toml
-from datetime import datetime
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 
@@ -18,6 +18,8 @@ TYPE_MAP = {
     'TELESCO': 'Télescopique',
     'NACELLE': 'Nacelle Diesel',
 }
+
+WLG_RE = re.compile(r'^[CTN]\d+$')
 
 
 def fmt_date(val):
@@ -71,21 +73,29 @@ def main():
     xl = pd.ExcelFile(XLSX_PATH)
     df = pd.read_excel(xl, sheet_name='PLANNING ENGINS WLG26', header=None)
 
+    # Ligne 2 (index 2) = en-têtes ; dates en colonnes 11+
+    header_row = df.iloc[2]
+    date_cols = {}  # col_index → "DD/MM/YYYY"
+    for i in range(11, len(header_row)):
+        v = header_row.iloc[i]
+        if pd.notna(v) and hasattr(v, 'strftime'):
+            date_cols[i] = v.strftime("%d/%m/%Y")
+        # On ignore les colonnes sans date (ex: "nuit")
+
+    print(f"  {len(date_cols)} colonnes-dates : "
+          f"{min(date_cols.values())} → {max(date_cols.values())}")
+
     engins_to_add = []
     attributions_to_add = []
 
     for _, row in df.iloc[3:].iterrows():
         engin_id = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ''
-        # Garder uniquement C1-C24, T1-T8, N1-N9
-        if not re.match(r'^[CTN]\d+$', engin_id):
+        if not WLG_RE.match(engin_id):
             continue
 
         type_raw = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ''
         taille = str(row.iloc[4]).strip() if pd.notna(row.iloc[4]) else ''
         fourches = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else ''
-        utilisateur = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else ''
-        date_debut = fmt_date(row.iloc[6])
-        date_fin = fmt_date(row.iloc[7])
 
         if not type_raw or type_raw == 'nan':
             continue
@@ -108,26 +118,31 @@ def main():
             'marque': marque,
         })
 
-        if date_debut and date_fin and utilisateur and utilisateur != 'nan':
+        # Une attribution par cellule non vide (date × engin)
+        for col_idx, date_str in date_cols.items():
+            if col_idx >= len(row):
+                continue
+            val = row.iloc[col_idx]
+            if not pd.notna(val):
+                continue
+            # Normalise les sauts de ligne (Alt+Enter dans Excel)
+            zone = ' '.join(part.strip() for part in str(val).split('\n') if part.strip())
+            if not zone or zone == 'nan':
+                continue
             attributions_to_add.append({
                 'numero_serie': engin_id,
-                'service': utilisateur,
-                'date': date_debut,
-                'date_fin': date_fin,
+                'service': zone,
+                'date': date_str,
+                'date_fin': date_str,
                 'periode': 'Journée',
                 'retourne': '',
             })
 
-    print(f"  {len(engins_to_add)} engins à importer")
-    print(f"  {len(attributions_to_add)} attributions à importer")
+    print(f"  {len(engins_to_add)} engins")
+    print(f"  {len(attributions_to_add)} attributions journalières")
 
     print("\n🔌 Connexion Google Sheets...")
     svc, sid = connect()
-
-    existing_engins = read_sheet(svc, sid, 'engins')
-    existing_ids = {e.get('numero_serie') for e in existing_engins}
-    existing_attrs = read_sheet(svc, sid, 'attributions_engins')
-    existing_attr_keys = {(a.get('numero_serie'), a.get('date')) for a in existing_attrs}
 
     # Catégories
     cats = read_sheet(svc, sid, 'categories_engins')
@@ -138,7 +153,9 @@ def main():
         write_sheet(svc, sid, 'categories_engins', cats)
         print(f"  Catégories ajoutées : {sorted(new_types)}")
 
-    # Engins — ajouter les nouveaux, mettre à jour les existants
+    # Engins — ajouter les nouveaux, mettre à jour marque des existants
+    existing_engins = read_sheet(svc, sid, 'engins')
+    existing_ids = {e.get('numero_serie') for e in existing_engins}
     updated_engins = {e['numero_serie']: e for e in existing_engins}
     nb_new, nb_updated = 0, 0
     for e in engins_to_add:
@@ -151,20 +168,19 @@ def main():
     write_sheet(svc, sid, 'engins', list(updated_engins.values()))
     print(f"  ✅ {nb_new} engins ajoutés, {nb_updated} mis à jour")
 
-    # Attributions
-    new_attrs = [a for a in attributions_to_add if (a['numero_serie'], a['date']) not in existing_attr_keys]
-    if new_attrs:
-        write_sheet(svc, sid, 'attributions_engins', existing_attrs + new_attrs)
-        print(f"  ✅ {len(new_attrs)} attributions ajoutées")
-    else:
-        print("  Attributions : déjà présentes, rien ajouté")
+    # Attributions : remplace toutes les attributions WLG par les nouvelles
+    existing_attrs = read_sheet(svc, sid, 'attributions_engins')
+    non_wlg = [a for a in existing_attrs if not WLG_RE.match(str(a.get('numero_serie', '')))]
+    write_sheet(svc, sid, 'attributions_engins', non_wlg + attributions_to_add)
+    print(f"  ✅ {len(attributions_to_add)} attributions WLG"
+          f" (remplacé {len(existing_attrs) - len(non_wlg)} anciennes)")
 
     print("\n🎉 Import WLG26 terminé !")
-    print(f"\n{'ID':5s} {'Type':22s} {'Taille':10s} {'Zone assignée'}")
-    print("-" * 60)
+    print(f"\n{'ID':5s} {'Type':22s} {'Marque':12s} {'Nb jours attribués'}")
+    print("-" * 65)
     for e in engins_to_add:
-        z = next((a['service'] for a in attributions_to_add if a['numero_serie'] == e['numero_serie']), '?')
-        print(f"{e['numero_serie']:5s} {e['type']:22s} {e['marque']:10s} {z}")
+        nb = sum(1 for a in attributions_to_add if a['numero_serie'] == e['numero_serie'])
+        print(f"{e['numero_serie']:5s} {e['type']:22s} {e['marque']:12s} {nb}")
 
 
 if __name__ == '__main__':
