@@ -126,39 +126,33 @@ def render_planning_golfettes_wlg(t, golfettes, attributions_golfettes):
     def _golf_label(g):
         num = g['numero_serie']
         zone = _get_zone_for_day(num, today, attributions_golfettes)
-        if zone:
-            return f"{num} — {zone}"
-        next_start = None
-        for a in attributions_golfettes:
-            if a.get('numero_serie') != num or a.get('retourne'):
-                continue
-            try:
-                dd = datetime.strptime(a['date'], "%d/%m/%Y").date()
-                if dd > today and (next_start is None or dd < next_start):
-                    next_start = dd
-            except Exception:
-                pass
-        if next_start:
-            return f"{num} — (livraison anticipée, démarre le {next_start.strftime('%d/%m')})"
-        return f"{num} — (hors période)"
+        return f"{num} — {zone}" if zone else num
 
     dispo_options = [_golf_label(g) for g in all_dispo]
 
     if dispo_options:
+        golf_sel = st.selectbox("Golfette *", dispo_options, key="wlg_sel_golf")
+        sel_num = golf_sel.split(" — ")[0]
+        is_inactive = not _get_zone_for_day(sel_num, today, attributions_golfettes)
+
+        confirm = False
+        if is_inactive:
+            confirm = st.checkbox("⚠️ Confirmer la mise en circulation anticipée", key=f"wlg_golf_early_{sel_num}")
+
         with st.form(f"form_wlg_golf_distrib_{st.session_state.get('_fk', 0)}"):
-            col_a, col_b, col_c = st.columns([2, 3, 2])
-            golf_sel = col_a.selectbox("Golfette *", dispo_options)
+            col_b, col_c = st.columns([3, 2])
             nom_input = col_b.text_input("Preneur *", placeholder="Prénom NOM")
             commentaire = col_c.text_input("Commentaire", placeholder="Optionnel")
             if st.form_submit_button("🔑 Distribuer", type="primary"):
-                if nom_input.strip():
-                    num = golf_sel.split(" — ")[0]
-                    add_distribution_clef('golfette', num, nom_input.strip(), commentaire)
-                    st.success(f"✅ Clé {num} → {nom_input.strip()}")
+                if not nom_input.strip():
+                    st.error("❌ Le nom du preneur est requis")
+                elif is_inactive and not confirm:
+                    st.error("⚠️ Cochez la case pour confirmer la mise en circulation anticipée")
+                else:
+                    add_distribution_clef('golfette', sel_num, nom_input.strip(), commentaire)
+                    st.success(f"✅ Clé {sel_num} → {nom_input.strip()}")
                     st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
-                else:
-                    st.error("❌ Le nom du preneur est requis")
     else:
         st.info("Toutes les clés sont en circulation")
 

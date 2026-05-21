@@ -148,41 +148,33 @@ def render_planning_wlg(t, engins, attributions_engins):
     def _engin_label(e):
         num = e['numero_serie']
         zone = _get_zone_for_day(num, today, attributions_engins)
-        if zone:
-            return f"{num} — {zone}"
-        # Pas encore actif : chercher la prochaine date de début
-        next_start = None
-        for a in attributions_engins:
-            if a.get('numero_serie') != num or a.get('retourne'):
-                continue
-            try:
-                dd = datetime.strptime(a['date'], "%d/%m/%Y").date()
-                if dd > today:
-                    if next_start is None or dd < next_start:
-                        next_start = dd
-            except Exception:
-                pass
-        if next_start:
-            return f"{num} — (livraison anticipée, démarre le {next_start.strftime('%d/%m')})"
-        return f"{num} — (hors période)"
+        return f"{num} — {zone}" if zone else num
 
     dispo_options = [_engin_label(e) for e in all_dispo]
 
     if dispo_options:
+        engin_sel = st.selectbox("Engin *", dispo_options, key="wlg_sel_engin")
+        sel_num = engin_sel.split(" — ")[0]
+        is_inactive = not _get_zone_for_day(sel_num, today, attributions_engins)
+
+        confirm = False
+        if is_inactive:
+            confirm = st.checkbox("⚠️ Confirmer la mise en circulation anticipée", key=f"wlg_early_{sel_num}")
+
         with st.form(f"form_wlg_distrib_{st.session_state.get('_fk', 0)}"):
-            col_a, col_b, col_c = st.columns([2, 3, 2])
-            engin_sel = col_a.selectbox("Engin *", dispo_options)
+            col_b, col_c = st.columns([3, 2])
             nom_input = col_b.text_input("Preneur *", placeholder="Prénom NOM")
             commentaire = col_c.text_input("Commentaire", placeholder="Optionnel")
             if st.form_submit_button("🔑 Distribuer", type="primary"):
-                if nom_input.strip():
-                    num = engin_sel.split(" — ")[0]
-                    add_distribution_clef('engin', num, nom_input.strip(), commentaire)
-                    st.success(f"✅ Clé {num} → {nom_input.strip()}")
+                if not nom_input.strip():
+                    st.error("❌ Le nom du preneur est requis")
+                elif is_inactive and not confirm:
+                    st.error("⚠️ Cochez la case pour confirmer la mise en circulation anticipée")
+                else:
+                    add_distribution_clef('engin', sel_num, nom_input.strip(), commentaire)
+                    st.success(f"✅ Clé {sel_num} → {nom_input.strip()}")
                     st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
-                else:
-                    st.error("❌ Le nom du preneur est requis")
     else:
         st.info("Toutes les clés sont en circulation")
 
