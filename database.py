@@ -21,8 +21,11 @@ ALL_SHEET_NAMES = [
     'vehicules', 'attributions', 'categories', 'services', 'interventions',
     'carburant', 'engins', 'attributions_engins', 'categories_engins',
     'interventions_engins', 'scooters', 'attributions_scooters',
-    'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules'
+    'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules',
+    'distribution_clefs'
 ]
+
+DISTRIB_EXT_ID = "1lHvCjEL-KZ0llBPKiZrWocOcHlcAoQkW5d72KShi1GY"
 
 
 @st.cache_data(ttl=60, show_spinner="Chargement des données...")
@@ -80,7 +83,7 @@ def init_database():
     try:
         sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
         existing_sheets = [s['properties']['title'] for s in sheet_metadata['sheets']]
-        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules']
+        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules', 'distribution_clefs']
         for sheet_name in required_sheets:
             if sheet_name not in existing_sheets:
                 sheets_service.spreadsheets().batchUpdate(
@@ -376,3 +379,66 @@ def add_intervention_scooter(immat, type_i, date, heure, comm, statut):
     interventions = get_interventions_scooters()
     interventions.append({'immatriculation': immat, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut})
     write_sheet('interventions_scooters', interventions)
+
+
+# CRUD DISTRIBUTION CLEFS
+def get_distribution_clefs():
+    return read_sheet('distribution_clefs')
+
+def add_distribution_clef(categorie, identifiant, nom, commentaire):
+    now = datetime.now()
+    entry = {
+        'date': now.strftime("%d/%m/%Y"),
+        'heure': now.strftime("%H:%M"),
+        'categorie': categorie,
+        'identifiant': identifiant,
+        'nom': nom,
+        'commentaire': commentaire,
+        'retour_clef': ''
+    }
+    clefs = get_distribution_clefs()
+    clefs.append(entry)
+    write_sheet('distribution_clefs', clefs)
+    _write_distrib_externe(categorie, identifiant, nom, commentaire, now)
+
+def retour_clef(idx):
+    clefs = get_distribution_clefs()
+    if 0 <= idx < len(clefs):
+        clefs[idx]['retour_clef'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+        write_sheet('distribution_clefs', clefs)
+
+def delete_distribution_clef(idx):
+    clefs = get_distribution_clefs()
+    if 0 <= idx < len(clefs):
+        clefs.pop(idx)
+        write_sheet('distribution_clefs', clefs)
+
+def _write_distrib_externe(categorie, identifiant, nom, commentaire, dt):
+    try:
+        date_str = dt.strftime("%d/%m/%Y")
+        if categorie == 'engin':
+            sheet_name = 'Clef engins'
+            prefix = identifiant[0].upper() if identifiant else ''
+            frontal = identifiant if prefix == 'C' else ''
+            telesco = identifiant if prefix == 'T' else ''
+            nacelle = identifiant if prefix == 'N' else ''
+            if not frontal and not telesco and not nacelle:
+                frontal = identifiant
+            row = [date_str, frontal, telesco, nacelle, nom, commentaire, '']
+        elif categorie == 'vehicule':
+            sheet_name = 'Clef véhicules'
+            row = [date_str, identifiant, nom, commentaire, '']
+        elif categorie == 'golfette':
+            sheet_name = 'Clef golfettes'
+            row = [date_str, identifiant, nom, commentaire, '']
+        else:
+            return
+        sheets_service.spreadsheets().values().append(
+            spreadsheetId=DISTRIB_EXT_ID,
+            range=f"'{sheet_name}'!A:G",
+            valueInputOption="RAW",
+            insertDataOption="INSERT_ROWS",
+            body={"values": [row]}
+        ).execute()
+    except Exception:
+        pass

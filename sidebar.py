@@ -10,6 +10,7 @@ def render_sidebar(t, attributions, attributions_scooters, attributions_engins, 
         "🔨 Pannes & Interventions",
         "📋 Fiche véhicule"
     ]
+    distrib_pages = ["🔑 Distribution Clés"]
     scooter_pages = [
         "🛵 Saisir un scooter",
         "🔧 Attribuer un scooter",
@@ -32,6 +33,10 @@ def render_sidebar(t, attributions, attributions_scooters, attributions_engins, 
         st.button("📊 Dashboard", key="nav_dashboard", use_container_width=True,
                   type="primary" if st.session_state.page == "📊 Dashboard" else "secondary",
                   on_click=nav_to, args=("📊 Dashboard",))
+
+        st.button("🔑 Distribution Clés", key="nav_distrib", use_container_width=True,
+                  type="primary" if st.session_state.page == "🔑 Distribution Clés" else "secondary",
+                  on_click=nav_to, args=("🔑 Distribution Clés",))
 
         with st.expander("🚗 Véhicules", expanded=st.session_state.page in vehicule_pages):
             for p in vehicule_pages:

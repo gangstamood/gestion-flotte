@@ -13,6 +13,7 @@ from pages.vehicules import render_vehicules
 from pages.scooters import render_scooters
 from pages.engins import render_engins
 from pages.parametres import render_parametres
+from pages.distribution_clefs import render_distribution_clefs
 
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide", initial_sidebar_state="expanded")
 
@@ -72,6 +73,8 @@ if page == "📊 Dashboard":
     render_dashboard(t, vehicules, attributions, scooters, attributions_scooters,
                      engins, attributions_engins, interventions, interventions_scooters,
                      interventions_engins, services, liens)
+elif page == "🔑 Distribution Clés":
+    render_distribution_clefs(t, engins, vehicules, scooters)
 elif page in VEHICULE_PAGES:
     render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions, fiches_vehicules)
 elif page in SCOOTER_PAGES:
