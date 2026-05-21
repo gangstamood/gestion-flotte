@@ -385,8 +385,15 @@ def add_intervention_scooter(immat, type_i, date, heure, comm, statut):
 def get_distribution_clefs():
     return read_sheet('distribution_clefs')
 
+_RETOUR_COL = {
+    'Clef engins':    'G',
+    'Clef véhicules': 'E',
+    'Clef golfettes': 'E',
+}
+
 def add_distribution_clef(categorie, identifiant, nom, commentaire):
     now = datetime.now()
+    ext_sheet, ext_row = _write_distrib_externe(categorie, identifiant, nom, commentaire, now)
     entry = {
         'date': now.strftime("%d/%m/%Y"),
         'heure': now.strftime("%H:%M"),
@@ -394,18 +401,20 @@ def add_distribution_clef(categorie, identifiant, nom, commentaire):
         'identifiant': identifiant,
         'nom': nom,
         'commentaire': commentaire,
-        'retour_clef': ''
+        'retour_clef': '',
+        'ext_sheet': ext_sheet,
+        'ext_row': str(ext_row) if ext_row else ''
     }
     clefs = get_distribution_clefs()
     clefs.append(entry)
     write_sheet('distribution_clefs', clefs)
-    _write_distrib_externe(categorie, identifiant, nom, commentaire, now)
 
 def retour_clef(idx):
     clefs = get_distribution_clefs()
     if 0 <= idx < len(clefs):
         clefs[idx]['retour_clef'] = datetime.now().strftime("%d/%m/%Y %H:%M")
         write_sheet('distribution_clefs', clefs)
+        _cocher_retour_externe(clefs[idx])
 
 def delete_distribution_clef(idx):
     clefs = get_distribution_clefs()
@@ -424,21 +433,50 @@ def _write_distrib_externe(categorie, identifiant, nom, commentaire, dt):
             nacelle = identifiant if prefix == 'N' else ''
             if not frontal and not telesco and not nacelle:
                 frontal = identifiant
-            row = [date_str, frontal, telesco, nacelle, nom, commentaire, '']
+            row = [date_str, frontal, telesco, nacelle, nom, commentaire, False]
         elif categorie == 'vehicule':
             sheet_name = 'Clef véhicules'
-            row = [date_str, identifiant, nom, commentaire, '']
+            row = [date_str, identifiant, nom, commentaire, False]
         elif categorie == 'golfette':
             sheet_name = 'Clef golfettes'
-            row = [date_str, identifiant, nom, commentaire, '']
+            row = [date_str, identifiant, nom, commentaire, False]
         else:
-            return
-        sheets_service.spreadsheets().values().append(
+            return '', None
+        result = sheets_service.spreadsheets().values().append(
             spreadsheetId=DISTRIB_EXT_ID,
             range=f"'{sheet_name}'!A:G",
             valueInputOption="RAW",
             insertDataOption="INSERT_ROWS",
             body={"values": [row]}
         ).execute()
+        updated = result.get('updates', {}).get('updatedRange', '')
+        row_num = None
+        if updated:
+            import re
+            m = re.search(r':.*?(\d+)$', updated)
+            if m:
+                row_num = int(m.group(1))
+        return sheet_name, row_num
+    except Exception:
+        return '', None
+
+def _cocher_retour_externe(entry):
+    try:
+        sheet_name = entry.get('ext_sheet', '')
+        ext_row = entry.get('ext_row', '')
+        if not sheet_name or not ext_row:
+            return
+        col = _RETOUR_COL.get(sheet_name)
+        if not col:
+            return
+        cell = f"'{sheet_name}'!{col}{ext_row}"
+        sheets_service.spreadsheets().values().update(
+            spreadsheetId=DISTRIB_EXT_ID,
+            range=cell,
+            valueInputOption="RAW",
+            body={"values": [[True]]}
+        ).execute()
+    except Exception:
+        pass
     except Exception:
         pass
