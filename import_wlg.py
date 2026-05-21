@@ -82,6 +82,7 @@ def main():
 
         type_raw = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ''
         taille = str(row.iloc[4]).strip() if pd.notna(row.iloc[4]) else ''
+        fourches = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else ''
         utilisateur = str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else ''
         date_debut = fmt_date(row.iloc[6])
         date_fin = fmt_date(row.iloc[7])
@@ -90,7 +91,9 @@ def main():
             continue
 
         type_norm = next((v for k, v in TYPE_MAP.items() if k in type_raw.upper()), type_raw)
-        marque = taille if taille and taille != 'nan' else ''
+        taille_clean = taille if taille and taille != 'nan' else ''
+        fourches_clean = fourches.capitalize() if fourches and fourches != 'nan' else ''
+        marque = f"{taille_clean} · {fourches_clean}" if fourches_clean else taille_clean
 
         engins_to_add.append({
             'numero_serie': engin_id,
@@ -128,13 +131,18 @@ def main():
         write_sheet(svc, sid, 'categories_engins', cats)
         print(f"  Catégories ajoutées : {sorted(new_types)}")
 
-    # Engins
-    new_engins = [e for e in engins_to_add if e['numero_serie'] not in existing_ids]
-    if new_engins:
-        write_sheet(svc, sid, 'engins', existing_engins + new_engins)
-        print(f"  ✅ {len(new_engins)} engins ajoutés")
-    else:
-        print("  Engins : déjà présents, rien ajouté")
+    # Engins — ajouter les nouveaux, mettre à jour les existants
+    updated_engins = {e['numero_serie']: e for e in existing_engins}
+    nb_new, nb_updated = 0, 0
+    for e in engins_to_add:
+        if e['numero_serie'] not in existing_ids:
+            updated_engins[e['numero_serie']] = e
+            nb_new += 1
+        else:
+            updated_engins[e['numero_serie']]['marque'] = e['marque']
+            nb_updated += 1
+    write_sheet(svc, sid, 'engins', list(updated_engins.values()))
+    print(f"  ✅ {nb_new} engins ajoutés, {nb_updated} mis à jour")
 
     # Attributions
     new_attrs = [a for a in attributions_to_add if (a['numero_serie'], a['date']) not in existing_attr_keys]

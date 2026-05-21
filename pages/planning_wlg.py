@@ -215,7 +215,7 @@ def render_planning_wlg(t, engins, attributions_engins):
                 f"<div style='overflow-x:auto;margin-bottom:1.4rem;'>"
                 f"<table style='width:100%;border-collapse:collapse;'><thead><tr>"
                 f"<th style='{th} width:65px;'>ID</th>"
-                f"<th style='{th} width:100px;'>Taille</th>"
+                f"<th style='{th} width:130px;'>Tonnage · Fourches</th>"
                 f"<th style='{th}'>Zone assignée</th>"
                 f"<th style='{th}'>Statut clé</th>"
                 f"</tr></thead><tbody>"
