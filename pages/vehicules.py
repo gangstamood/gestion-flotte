@@ -28,7 +28,7 @@ def render_vehicules(page, t, vehicules, attributions, categories, services, bon
 def _page_saisir(t, vehicules, categories, services):
     st.markdown("# ➕ Nouveau Véhicule")
     st.markdown("<p class='page-intro'>Ajouter un véhicule à votre flotte</p>", unsafe_allow_html=True)
-    with st.form("form_vh"):
+    with st.form(f"form_vh_{st.session_state.get('_fk',0)}"):
         st.markdown("**🚗 Informations véhicule**")
         col1, col2 = st.columns(2)
         immat = col1.text_input("Immatriculation *", placeholder="AB-123-CD")
@@ -51,6 +51,7 @@ def _page_saisir(t, vehicules, categories, services):
                     add_vehicule(immat, type_v, marque, agence)
                     add_attribution(immat, service, date_s.strftime("%d/%m/%Y"), heure_s.strftime("%H:%M"), date_retour.strftime("%d/%m/%Y"))
                     st.success(f"✅ {immat} ajouté et attribué au service {service} !")
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
             else:
                 st.error("❌ Champs requis")
@@ -130,7 +131,7 @@ def _page_carburant(t, vehicules, attributions, services, bons_carburant):
     service_bon = st.selectbox("Service *", services, key="service_bon")
     vh_srv = [f"{v['immatriculation']} - {v['type']} {v['marque']}" for attr in attributions if attr.get('service') == service_bon and not attr.get('retourne') for v in vehicules if v['immatriculation'] == attr['immatriculation']]
     if vh_srv:
-        with st.form("form_bon"):
+        with st.form(f"form_bon_{st.session_state.get('_fk',0)}"):
             vh_sel = st.selectbox("Véhicule *", vh_srv)
             col1, col2 = st.columns(2)
             date_bon = col1.date_input("Date *", value=datetime.now())
@@ -147,6 +148,7 @@ def _page_carburant(t, vehicules, attributions, services, bons_carburant):
                     add_bon_carburant(bon)
                     st.session_state.dernier_bon = {'bon': bon, 'conducteur_nom': conducteur_nom, 'conducteur_prenom': conducteur_prenom, 'logo_url': logo_url}
                     st.success(f"✅ Bon {num_bon} généré !")
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
                 else:
                     st.error("❌ Champs requis")
@@ -213,7 +215,7 @@ def _page_interventions(t, vehicules, interventions):
     st.markdown("<p class='page-intro'>Déclarer et suivre les interventions</p>", unsafe_allow_html=True)
     st.markdown("### ➕ Déclarer")
     if vehicules:
-        with st.form("form_interv"):
+        with st.form(f"form_interv_{st.session_state.get('_fk',0)}"):
             col1, col2 = st.columns(2)
             vh_sel = col1.selectbox("Véhicule *", [f"{v['immatriculation']} - {v['type']} {v['marque']}" for v in vehicules])
             type_i = col2.selectbox("Type *", ["Panne", "Entretien", "Réparation", "Contrôle", "Autre"])
@@ -226,6 +228,7 @@ def _page_interventions(t, vehicules, interventions):
                 if comm:
                     add_intervention(vh_sel.split(" - ")[0], type_i, date_i.strftime("%d/%m/%Y"), heure_i.strftime("%H:%M"), comm, statut)
                     st.success("✅ Enregistré !")
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
     else:
         st.warning("⚠️ Aucun véhicule enregistré")

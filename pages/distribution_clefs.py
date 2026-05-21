@@ -31,7 +31,7 @@ def render_distribution_clefs(t, engins, vehicules, scooters):
 
     with tab_engin:
         if engins:
-            with st.form("form_distrib_engin"):
+            with st.form(f"form_distrib_engin_{st.session_state.get('_fk',0)}"):
                 options = [f"{e['numero_serie']} — {e['type']} {e['marque']}" for e in engins]
                 engin_sel = st.selectbox("Engin *", options)
                 col_a, col_b = st.columns(2)
@@ -42,6 +42,7 @@ def render_distribution_clefs(t, engins, vehicules, scooters):
                         identifiant = engin_sel.split(" — ")[0]
                         add_distribution_clef('engin', identifiant, nom.strip(), commentaire)
                         st.success(f"✅ Clé {identifiant} distribuée à {nom}")
+                        st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                         st.rerun()
                     else:
                         st.error("❌ Le nom du preneur est requis")
@@ -50,7 +51,7 @@ def render_distribution_clefs(t, engins, vehicules, scooters):
 
     with tab_vehicule:
         if vehicules:
-            with st.form("form_distrib_vehicule"):
+            with st.form(f"form_distrib_vehicule_{st.session_state.get('_fk',0)}"):
                 options_v = [f"{v['immatriculation']} — {v['type']} {v['marque']}" for v in vehicules]
                 vh_sel = st.selectbox("Véhicule *", options_v)
                 col_a, col_b = st.columns(2)
@@ -61,6 +62,7 @@ def render_distribution_clefs(t, engins, vehicules, scooters):
                         identifiant_v = vh_sel.split(" — ")[0]
                         add_distribution_clef('vehicule', identifiant_v, nom_v.strip(), commentaire_v)
                         st.success(f"✅ Clé {identifiant_v} distribuée à {nom_v}")
+                        st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                         st.rerun()
                     else:
                         st.error("❌ Le nom du preneur est requis")

@@ -37,10 +37,11 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
                 delete_category(cat)
                 st.rerun()
         c1, c2 = st.columns([3, 1])
-        nv_cat = c1.text_input("Nouvelle catégorie", label_visibility="collapsed", placeholder="Nouvelle catégorie...")
+        nv_cat = c1.text_input("Nouvelle catégorie", key=f"nv_cat_{st.session_state.get('_fk',0)}", label_visibility="collapsed", placeholder="Nouvelle catégorie...")
         if c2.button("➕", key="ac", type="primary"):
             if nv_cat:
                 add_category(nv_cat)
+                st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                 st.rerun()
     with col2:
         st.markdown("#### 🏢 Services")
@@ -51,10 +52,11 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
                 delete_service(srv)
                 st.rerun()
         c1, c2 = st.columns([3, 1])
-        nv_srv = c1.text_input("Nouveau service", label_visibility="collapsed", placeholder="Nouveau service...")
+        nv_srv = c1.text_input("Nouveau service", key=f"nv_srv_{st.session_state.get('_fk',0)}", label_visibility="collapsed", placeholder="Nouveau service...")
         if c2.button("➕", key="as", type="primary"):
             if nv_srv:
                 add_service(nv_srv)
+                st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                 st.rerun()
 
     st.markdown("---")
@@ -69,10 +71,11 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
                 delete_category_engin(cat)
                 st.rerun()
         c1, c2 = st.columns([3, 1])
-        nv_cat_eng = c1.text_input("Nouvelle catégorie engin", label_visibility="collapsed", placeholder="Nouvelle catégorie engin...")
+        nv_cat_eng = c1.text_input("Nouvelle catégorie engin", key=f"nv_cat_eng_{st.session_state.get('_fk',0)}", label_visibility="collapsed", placeholder="Nouvelle catégorie engin...")
         if c2.button("➕", key="ace", type="primary"):
             if nv_cat_eng:
                 add_category_engin(nv_cat_eng)
+                st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                 st.rerun()
 
     st.markdown("---")
@@ -87,10 +90,11 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
                 delete_category_scooter(cat)
                 st.rerun()
         c1, c2 = st.columns([3, 1])
-        nv_cat_sco = c1.text_input("Nouvelle catégorie scooter", label_visibility="collapsed", placeholder="Nouvelle catégorie scooter...")
+        nv_cat_sco = c1.text_input("Nouvelle catégorie scooter", key=f"nv_cat_sco_{st.session_state.get('_fk',0)}", label_visibility="collapsed", placeholder="Nouvelle catégorie scooter...")
         if c2.button("➕", key="acs", type="primary"):
             if nv_cat_sco:
                 add_category_scooter(nv_cat_sco)
+                st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                 st.rerun()
 
     st.markdown("---")
@@ -105,13 +109,14 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
             if c3.button("🗑️", key=f"dl_{lien.get('nom', '')}"):
                 delete_lien(lien.get('nom', ''))
                 st.rerun()
-        with st.form("form_add_lien"):
+        with st.form(f"form_add_lien_{st.session_state.get('_fk',0)}"):
             c1, c2, c3 = st.columns([2, 3, 1])
             nv_nom = c1.text_input("Nom *", label_visibility="collapsed", placeholder="Ex : Véhicules 2024")
             nv_url = c2.text_input("URL *", label_visibility="collapsed", placeholder="https://...")
             if c3.form_submit_button("➕", type="primary"):
                 if nv_nom and nv_url:
                     add_lien(nv_nom, nv_url)
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
                 else:
                     st.error("❌ Nom et URL requis")

@@ -153,7 +153,7 @@ def _page_vue(t, engins, attributions_engins, services, interventions_engins):
     with col_attr:
         st.markdown("### ➕ Nouvelle Attribution")
         if engins and services:
-            with st.form("vue_form_attr"):
+            with st.form(f"vue_form_attr_{st.session_state.get('_fk',0)}"):
                 engin_sel = st.selectbox("Engin *", [f"{e['numero_serie']} - {e['type']} {e['marque']}" for e in engins])
                 service_sel = st.selectbox("Service *", services)
                 col_d1, col_d2, col_d3 = st.columns(3)
@@ -169,6 +169,7 @@ def _page_vue(t, engins, attributions_engins, services, interventions_engins):
                             periode_sel
                         )
                         st.success("✅ Attribution enregistrée !")
+                        st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                         st.rerun()
                     else:
                         st.error("❌ Date fin doit être ≥ date début")
@@ -192,7 +193,7 @@ def _page_vue(t, engins, attributions_engins, services, interventions_engins):
 def _page_saisir(t, engins, categories_engins):
     st.markdown("# 🚜 Nouvel Engin")
     st.markdown("<p class='page-intro'>Ajouter un engin à votre parc</p>", unsafe_allow_html=True)
-    with st.form("form_engin"):
+    with st.form(f"form_engin_{st.session_state.get('_fk',0)}"):
         col1, col2 = st.columns(2)
         num_serie = col1.text_input("N° Série / Identifiant *", placeholder="ENG-001")
         marque = col2.text_input("Marque *", placeholder="Caterpillar")
@@ -201,6 +202,7 @@ def _page_saisir(t, engins, categories_engins):
             if num_serie and marque:
                 add_engin(num_serie, type_e, marque)
                 st.success(f"✅ {num_serie} ajouté !")
+                st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                 st.rerun()
             else:
                 st.error("❌ Champs requis")
@@ -378,7 +380,7 @@ def _page_interventions(t, engins, interventions_engins):
     st.markdown("<p class='page-intro'>Déclarer et suivre les interventions sur engins</p>", unsafe_allow_html=True)
     st.markdown("### ➕ Déclarer")
     if engins:
-        with st.form("form_interv_engin"):
+        with st.form(f"form_interv_engin_{st.session_state.get('_fk',0)}"):
             col1, col2 = st.columns(2)
             eng_sel = col1.selectbox("Engin *", [f"{e['numero_serie']} - {e['type']} {e['marque']}" for e in engins])
             type_i = col2.selectbox("Type *", ["Panne", "Entretien", "Réparation", "Contrôle", "Autre"])
@@ -391,6 +393,7 @@ def _page_interventions(t, engins, interventions_engins):
                 if comm:
                     add_intervention_engin(eng_sel.split(" - ")[0], type_i, date_i.strftime("%d/%m/%Y"), heure_i.strftime("%H:%M"), comm, statut)
                     st.success("✅ Enregistré !")
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
     else:
         st.warning("⚠️ Aucun engin enregistré")

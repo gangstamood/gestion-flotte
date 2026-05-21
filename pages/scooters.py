@@ -23,7 +23,7 @@ def render_scooters(page, t, scooters, attributions_scooters, categories_scooter
 def _page_saisir(t, scooters, categories_scooters, services):
     st.markdown("# 🛵 Nouveau Scooter")
     st.markdown("<p class='page-intro'>Ajouter un scooter à votre flotte</p>", unsafe_allow_html=True)
-    with st.form("form_sco"):
+    with st.form(f"form_sco_{st.session_state.get('_fk',0)}"):
         st.markdown("**🛵 Informations scooter**")
         col1, col2 = st.columns(2)
         immat_sco = col1.text_input("Immatriculation *", placeholder="AB-123-CD")
@@ -45,6 +45,7 @@ def _page_saisir(t, scooters, categories_scooters, services):
                     add_scooter(immat_sco, type_sco, marque_sco)
                     add_attribution_scooter(immat_sco, service_sco, date_s_sco.strftime("%d/%m/%Y"), heure_s_sco.strftime("%H:%M"), date_retour_sco.strftime("%d/%m/%Y"), casque_sco)
                     st.success(f"✅ {immat_sco} ajouté et attribué au service {service_sco} !")
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
             else:
                 st.error("❌ Champs requis")
@@ -63,7 +64,7 @@ def _page_attribuer(t, scooters, attributions_scooters, services):
     st.markdown("# 🔧 Attribution Scooter")
     st.markdown("<p class='page-intro'>Attribuer un scooter à un service</p>", unsafe_allow_html=True)
     if scooters:
-        with st.form("form_attr_sco"):
+        with st.form(f"form_attr_sco_{st.session_state.get('_fk',0)}"):
             col1, col2 = st.columns(2)
             sco_sel = col1.selectbox("Scooter *", [f"{s['immatriculation']} - {s['type']} {s['marque']}" for s in scooters])
             service_sco = col2.selectbox("Service *", services)
@@ -79,6 +80,7 @@ def _page_attribuer(t, scooters, attributions_scooters, services):
                 else:
                     add_attribution_scooter(sco_sel.split(" - ")[0], service_sco, date_s_sco.strftime("%d/%m/%Y"), heure_s_sco.strftime("%H:%M"), date_retour_sco.strftime("%d/%m/%Y"), casque_sco)
                     st.success("✅ Attribué !")
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
     else:
         st.warning("⚠️ Aucun scooter")
@@ -120,7 +122,7 @@ def _page_interventions(t, scooters, interventions_scooters):
     st.markdown("<p class='page-intro'>Déclarer et suivre les interventions</p>", unsafe_allow_html=True)
     st.markdown("### ➕ Déclarer")
     if scooters:
-        with st.form("form_interv_sco"):
+        with st.form(f"form_interv_sco_{st.session_state.get('_fk',0)}"):
             col1, col2 = st.columns(2)
             sco_sel_i = col1.selectbox("Scooter *", [f"{s['immatriculation']} - {s['type']} {s['marque']}" for s in scooters])
             type_i_sco = col2.selectbox("Type *", ["Panne", "Entretien", "Réparation", "Contrôle", "Autre"])
@@ -133,6 +135,7 @@ def _page_interventions(t, scooters, interventions_scooters):
                 if comm_sco:
                     add_intervention_scooter(sco_sel_i.split(" - ")[0], type_i_sco, date_i_sco.strftime("%d/%m/%Y"), heure_i_sco.strftime("%H:%M"), comm_sco, statut_sco)
                     st.success("✅ Enregistré !")
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                     st.rerun()
     else:
         st.warning("⚠️ Aucun scooter enregistré")

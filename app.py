@@ -58,6 +58,8 @@ if 'dashboard_detail' not in st.session_state:
     st.session_state.dashboard_detail = None
 if 'eng_sem_offset' not in st.session_state:
     st.session_state.eng_sem_offset = 0
+if '_fk' not in st.session_state:
+    st.session_state['_fk'] = 0
 
 # SIDEBAR
 render_sidebar(t, attributions, attributions_scooters, attributions_engins, services)
