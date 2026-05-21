@@ -142,10 +142,31 @@ def render_planning_wlg(t, engins, attributions_engins):
     # ── DISTRIBUER UNE CLÉ ─────────────────────────────────────────────────
     st.markdown("### 🔑 Distribuer une clé")
 
-    dispo_options = [
-        f"{e['numero_serie']} — {_get_zone_for_day(e['numero_serie'], today, attributions_engins)}"
-        for e in disponibles
-    ]
+    # Tous les engins sans clé en circulation (y compris pas encore actifs)
+    all_dispo = [e for e in wlg_engins if e['numero_serie'] not in circ_ids]
+
+    def _engin_label(e):
+        num = e['numero_serie']
+        zone = _get_zone_for_day(num, today, attributions_engins)
+        if zone:
+            return f"{num} — {zone}"
+        # Pas encore actif : chercher la prochaine date de début
+        next_start = None
+        for a in attributions_engins:
+            if a.get('numero_serie') != num or a.get('retourne'):
+                continue
+            try:
+                dd = datetime.strptime(a['date'], "%d/%m/%Y").date()
+                if dd > today:
+                    if next_start is None or dd < next_start:
+                        next_start = dd
+            except Exception:
+                pass
+        if next_start:
+            return f"{num} — (livraison anticipée, démarre le {next_start.strftime('%d/%m')})"
+        return f"{num} — (hors période)"
+
+    dispo_options = [_engin_label(e) for e in all_dispo]
 
     if dispo_options:
         with st.form(f"form_wlg_distrib_{st.session_state.get('_fk', 0)}"):
@@ -163,10 +184,7 @@ def render_planning_wlg(t, engins, attributions_engins):
                 else:
                     st.error("❌ Le nom du preneur est requis")
     else:
-        if actifs_today:
-            st.info("Toutes les clés actives aujourd'hui sont déjà en circulation")
-        else:
-            st.info("Aucun engin actif aujourd'hui")
+        st.info("Toutes les clés sont en circulation")
 
     st.markdown("---")
 
