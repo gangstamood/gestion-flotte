@@ -44,9 +44,13 @@ def render_sidebar(t, attributions, attributions_scooters, attributions_engins, 
                   type="primary" if st.session_state.page == "🔑 Distribution Clés" else "secondary",
                   on_click=nav_to, args=("🔑 Distribution Clés",))
 
-        st.button("🎪 Planning WLG", key="nav_wlg", use_container_width=True,
-                  type="primary" if st.session_state.page == "🎪 Planning WLG" else "secondary",
-                  on_click=nav_to, args=("🎪 Planning WLG",))
+        wlg_pages = ["🎪 Planning Engins WLG", "⛳ Planning Golfettes WLG", "🔨 Interventions WLG"]
+        with st.expander("🎪 WLG26", expanded=st.session_state.page in wlg_pages):
+            for p in wlg_pages:
+                label = p.split(" ", 1)[1] if " " in p else p
+                st.button(label, key=f"nav_{p}", use_container_width=True,
+                          type="primary" if st.session_state.page == p else "secondary",
+                          on_click=nav_to, args=(p,))
 
         with st.expander("🚗 Véhicules", expanded=st.session_state.page in vehicule_pages):
             for p in vehicule_pages:

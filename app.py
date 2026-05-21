@@ -16,6 +16,8 @@ from pages.golfettes import render_golfettes
 from pages.parametres import render_parametres
 from pages.distribution_clefs import render_distribution_clefs
 from pages.planning_wlg import render_planning_wlg
+from pages.planning_golfettes_wlg import render_planning_golfettes_wlg
+from pages.interventions_wlg import render_interventions_wlg
 
 st.set_page_config(page_title="Gestion de Flotte", page_icon="🚗", layout="wide", initial_sidebar_state="expanded")
 
@@ -67,6 +69,8 @@ if 'eng_sem_offset' not in st.session_state:
     st.session_state.eng_sem_offset = 0
 if 'wlg_sem_offset' not in st.session_state:
     st.session_state.wlg_sem_offset = 0
+if 'wlg_golf_sem_offset' not in st.session_state:
+    st.session_state.wlg_golf_sem_offset = 0
 if 'golf_sem_offset' not in st.session_state:
     st.session_state.golf_sem_offset = 0
 if '_fk' not in st.session_state:
@@ -90,8 +94,12 @@ if page == "📊 Dashboard":
                      golfettes, attributions_golfettes, interventions_golfettes)
 elif page == "🔑 Distribution Clés":
     render_distribution_clefs(t, engins, vehicules, scooters, golfettes)
-elif page == "🎪 Planning WLG":
+elif page in ("🎪 Planning WLG", "🎪 Planning Engins WLG"):
     render_planning_wlg(t, engins, attributions_engins)
+elif page == "⛳ Planning Golfettes WLG":
+    render_planning_golfettes_wlg(t, golfettes, attributions_golfettes)
+elif page == "🔨 Interventions WLG":
+    render_interventions_wlg(t, engins, golfettes, interventions_engins, interventions_golfettes)
 elif page in VEHICULE_PAGES:
     render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions, fiches_vehicules)
 elif page in SCOOTER_PAGES:
