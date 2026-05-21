@@ -4,20 +4,189 @@ from datetime import datetime, timedelta
 from database import (
     add_engin, delete_engin,
     add_attribution_engin, update_attribution_engin, delete_attribution_engin,
-    _is_engin_active_today, add_intervention_engin
+    _is_engin_active_today, add_intervention_engin, retourner_engin
 )
+from alertes import verifier_alertes_engins
 
 
 esc = html.escape
 
 
 def render_engins(page, t, engins, attributions_engins, categories_engins, services, interventions_engins):
-    if page == "🚜 Saisir un engin":
+    if page == "📊 Vue Engins":
+        _page_vue(t, engins, attributions_engins, services, interventions_engins)
+    elif page == "🚜 Saisir un engin":
         _page_saisir(t, engins, categories_engins)
     elif page == "🔧 Attribuer un engin":
         _page_attribuer(t, engins, attributions_engins, services)
     elif page == "🔨 Interventions Engins":
         _page_interventions(t, engins, interventions_engins)
+
+
+def _page_vue(t, engins, attributions_engins, services, interventions_engins):
+    st.markdown("# 🚜 Vue Engins")
+    st.markdown("<p class='page-intro'>Tableau de bord opérationnel — engins</p>", unsafe_allow_html=True)
+
+    today_date = datetime.now().date()
+    distribues = [a for a in attributions_engins if _is_engin_active_today(a)]
+    distribues_ids = {a['numero_serie'] for a in distribues}
+    interv_en_cours = [i for i in interventions_engins if i.get('statut') == "En cours"]
+    interv_ids = {i['numero_serie'] for i in interv_en_cours}
+    disponibles = [e for e in engins if e['numero_serie'] not in distribues_ids and e['numero_serie'] not in interv_ids]
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("🚜 Total", len(engins))
+    col2.metric("🔑 Distribués", len(distribues_ids))
+    col3.metric("✅ Disponibles", len(disponibles))
+    col4.metric("🔧 Interventions", len(interv_en_cours))
+
+    alertes = verifier_alertes_engins(attributions_engins)
+    if alertes:
+        st.markdown("---")
+        st.markdown("### 🚨 Alertes")
+        for a in alertes:
+            if a['jours_retard'] > 0:
+                st.error(f"🔴 **{a['numero_serie']}** — {a['service']} — en retard de {a['jours_retard']}j (fin prévue {a['date_fin']})")
+            else:
+                st.warning(f"🟠 **{a['numero_serie']}** — {a['service']} — fin prévue {a['date_fin']}")
+
+    st.markdown("---")
+    st.markdown("### 📅 Planning Semaine")
+    if 'eng_sem_offset' not in st.session_state:
+        st.session_state['eng_sem_offset'] = 0
+
+    lundi = today_date - timedelta(days=today_date.weekday())
+    semaine_debut = lundi + timedelta(weeks=st.session_state['eng_sem_offset'])
+    semaine_fin_nav = semaine_debut + timedelta(days=6)
+
+    col_nav1, col_nav2, col_nav3 = st.columns([1, 3, 1])
+    if col_nav1.button("← Préc.", key="vue_eng_prev"):
+        st.session_state['eng_sem_offset'] -= 1
+        st.rerun()
+    col_nav2.markdown(
+        f"<h4 style='text-align:center; color:{t['h23_color']}'>Semaine du {semaine_debut.strftime('%d/%m/%Y')} au {semaine_fin_nav.strftime('%d/%m/%Y')}</h4>",
+        unsafe_allow_html=True
+    )
+    if col_nav3.button("Suiv. →", key="vue_eng_next"):
+        st.session_state['eng_sem_offset'] += 1
+        st.rerun()
+
+    if engins:
+        JOURS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+        jours_sem = [semaine_debut + timedelta(days=i) for i in range(7)]
+        _PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316']
+        svc_color = {s: _PALETTE[i % len(_PALETTE)] for i, s in enumerate(services)}
+
+        def _get_slot(num_serie, day, periode):
+            for a in attributions_engins:
+                if a.get('numero_serie') != num_serie or a.get('retourne'):
+                    continue
+                try:
+                    dd = datetime.strptime(a['date'], "%d/%m/%Y").date()
+                    df_d = datetime.strptime(a.get('date_fin', a['date']), "%d/%m/%Y").date()
+                    if dd <= day <= df_d:
+                        p = a.get('periode', 'Journée')
+                        if p == 'Journée' or p == periode:
+                            return a['service']
+                except Exception:
+                    pass
+            return None
+
+        cb = t['card_border']
+        ib = t['input_bg']
+        hc = t['h23_color']
+        ic = t['intro_color']
+        th_s = f"padding:0.45rem 0.4rem; border:1px solid {cb}; text-align:center; background:{ib}; color:{hc}; font-weight:600; font-size:0.8rem;"
+        td_s = f"border:1px solid {cb}; text-align:center; padding:0.3rem 0.25rem; font-size:0.75rem;"
+        td_eng_s = f"{td_s} background:{ib}; color:{hc}; text-align:left; padding:0.4rem 0.5rem; min-width:110px;"
+        td_slot_s = f"{td_s} background:{ib}; color:{ic}; min-width:52px;"
+
+        grid = f"<div style='overflow-x:auto'><table style='width:100%; border-collapse:collapse;'><thead><tr>"
+        grid += f"<th style='{th_s} text-align:left; min-width:110px;'>Engin</th>"
+        grid += f"<th style='{th_s} min-width:52px;'>Slot</th>"
+        for i, jour in enumerate(jours_sem):
+            jour_color = '#f59e0b' if jour == today_date else hc
+            grid += f"<th style='{th_s} color:{jour_color}; min-width:88px;'>{JOURS_FR[i]}<br>{jour.strftime('%d/%m')}</th>"
+        grid += "</tr></thead><tbody>"
+        for eng in engins:
+            num = eng.get('numero_serie', '')
+            eng_label = f"<b>{esc(num)}</b><br><small style='color:{ic}'>{esc(eng.get('type',''))} {esc(eng.get('marque',''))}</small>"
+            for pi, (periode, icon) in enumerate([('Matin', '🌅'), ('Après-midi', '🌇')]):
+                grid += "<tr>"
+                if pi == 0:
+                    grid += f"<td rowspan='2' style='{td_eng_s}'>{eng_label}</td>"
+                grid += f"<td style='{td_slot_s}'>{icon} {periode}</td>"
+                for jour in jours_sem:
+                    svc = _get_slot(num, jour, periode)
+                    if svc:
+                        bg = svc_color.get(svc, '#6b7280')
+                        grid += f"<td style='{td_s} background:{bg}; color:white; font-weight:500;'>{esc(svc)}</td>"
+                    else:
+                        grid += f"<td style='{td_s} color:{ic};'>—</td>"
+                grid += "</tr>"
+        grid += "</tbody></table></div>"
+        st.markdown(grid, unsafe_allow_html=True)
+
+        legende = " ".join(
+            f"<span style='background:{svc_color.get(s,'#6b7280')}; color:white; padding:0.2rem 0.6rem; border-radius:12px; font-size:0.75rem; margin-right:0.3rem;'>{esc(s)}</span>"
+            for s in services
+        )
+        st.markdown(f"<div style='margin-top:0.6rem'>{legende}</div>", unsafe_allow_html=True)
+    else:
+        st.info("Aucun engin enregistré")
+
+    st.markdown("---")
+    col_ret, col_attr = st.columns(2)
+
+    with col_ret:
+        st.markdown("### 🔙 Retourner un engin")
+        if distribues:
+            col_r1, col_r2 = st.columns([3, 1])
+            engin_ret = col_r1.selectbox("Engin distribué", [f"{a['numero_serie']} — {a['service']}" for a in distribues], key="vue_ret_sel")
+            if col_r2.button("✅ Retourner", type="primary", key="vue_ret_btn"):
+                retourner_engin(engin_ret.split(" — ")[0])
+                st.success("✅ Retourné !")
+                st.rerun()
+        else:
+            st.info("Aucun engin distribué aujourd'hui")
+
+    with col_attr:
+        st.markdown("### ➕ Nouvelle Attribution")
+        if engins and services:
+            with st.form("vue_form_attr"):
+                engin_sel = st.selectbox("Engin *", [f"{e['numero_serie']} - {e['type']} {e['marque']}" for e in engins])
+                service_sel = st.selectbox("Service *", services)
+                col_d1, col_d2, col_d3 = st.columns(3)
+                date_deb = col_d1.date_input("Début *", value=datetime.now())
+                date_fin_inp = col_d2.date_input("Fin *", value=datetime.now())
+                periode_sel = col_d3.selectbox("Période *", ["Journée", "Matin", "Après-midi"])
+                if st.form_submit_button("✅ Confirmer", type="primary"):
+                    if date_fin_inp >= date_deb:
+                        add_attribution_engin(
+                            engin_sel.split(" - ")[0], service_sel,
+                            date_deb.strftime("%d/%m/%Y"),
+                            date_fin_inp.strftime("%d/%m/%Y"),
+                            periode_sel
+                        )
+                        st.success("✅ Attribution enregistrée !")
+                        st.rerun()
+                    else:
+                        st.error("❌ Date fin doit être ≥ date début")
+        else:
+            st.info("Ajoutez des engins et services d'abord")
+
+    if interv_en_cours:
+        st.markdown("---")
+        st.markdown("### 🔧 Interventions en cours")
+        for i in interv_en_cours:
+            st.markdown(
+                f"<div style='background:{t['card_bg']};border:1px solid {t['card_border']};border-left:4px solid #f59e0b;border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:0.5rem;'>"
+                f"<span style='color:{t['h1_color']};font-weight:600;'>{esc(i.get('numero_serie',''))}</span>"
+                f"<span style='color:{t['label_color']};margin-left:1rem;'>🔧 {esc(i.get('type',''))} — {esc(i.get('date',''))}</span><br/>"
+                f"<span style='color:{t['text_color']};font-size:0.85rem;'>💬 {esc(i.get('commentaire',''))}</span>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
 
 
 def _page_saisir(t, engins, categories_engins):

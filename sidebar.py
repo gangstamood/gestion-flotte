@@ -16,6 +16,7 @@ def render_sidebar(t, attributions, attributions_scooters, attributions_engins, 
         "🔨 Interventions Scooters"
     ]
     engin_pages = [
+        "📊 Vue Engins",
         "🚜 Saisir un engin",
         "🔧 Attribuer un engin",
         "🔨 Interventions Engins"

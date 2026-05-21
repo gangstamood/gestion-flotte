@@ -66,7 +66,7 @@ page = st.session_state.page
 
 VEHICULE_PAGES = ["➕ Saisir un véhicule", "🔧 Attribuer un véhicule", "⛽ Bons de Carburant", "🔨 Pannes & Interventions", "📋 Fiche véhicule"]
 SCOOTER_PAGES = ["🛵 Saisir un scooter", "🔧 Attribuer un scooter", "🔨 Interventions Scooters"]
-ENGIN_PAGES = ["🚜 Saisir un engin", "🔧 Attribuer un engin", "🔨 Interventions Engins"]
+ENGIN_PAGES = ["📊 Vue Engins", "🚜 Saisir un engin", "🔧 Attribuer un engin", "🔨 Interventions Engins"]
 
 if page == "📊 Dashboard":
     render_dashboard(t, vehicules, attributions, scooters, attributions_scooters,
