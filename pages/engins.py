@@ -213,7 +213,6 @@ def _page_saisir(t, engins, categories_engins):
     if engins:
         for eng in engins:
             num_pre_val = eng.get('numero_prestataire', '') or ''
-            pre_badge = f" · <span style='color:{t[\"intro_color\"]};font-size:0.8rem;'>#{esc(num_pre_val)}</span>" if num_pre_val else ""
             with st.expander(f"{eng['numero_serie']} — {eng['type']} {eng['marque']}{(' · #' + num_pre_val) if num_pre_val else ''}"):
                 col_f, col_s, col_d = st.columns([4, 1, 1])
                 new_pre = col_f.text_input("N° prestataire", value=num_pre_val, key=f"pre_{eng['numero_serie']}", placeholder="Référence du loueur")
