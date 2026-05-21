@@ -240,11 +240,19 @@ def delete_lien(nom):
 def get_engins():
     return read_sheet('engins')
 
-def add_engin(num_serie, type_e, marque):
+def add_engin(num_serie, type_e, marque, numero_prestataire=""):
     engins = get_engins()
     if not any(e.get('numero_serie') == num_serie for e in engins):
-        engins.append({'numero_serie': num_serie, 'type': type_e, 'marque': marque})
+        engins.append({'numero_serie': num_serie, 'type': type_e, 'marque': marque, 'numero_prestataire': numero_prestataire})
         write_sheet('engins', engins)
+
+def update_engin_prestataire(num_serie, numero_prestataire):
+    engins = get_engins()
+    for e in engins:
+        if e.get('numero_serie') == num_serie:
+            e['numero_prestataire'] = numero_prestataire
+            break
+    write_sheet('engins', engins)
 
 def delete_engin(num_serie):
     engins = [e for e in get_engins() if e.get('numero_serie') != num_serie]

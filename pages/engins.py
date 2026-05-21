@@ -2,7 +2,7 @@ import html
 import streamlit as st
 from datetime import datetime, timedelta
 from database import (
-    add_engin, delete_engin,
+    add_engin, delete_engin, update_engin_prestataire,
     add_attribution_engin, update_attribution_engin, delete_attribution_engin,
     _is_engin_active_today, add_intervention_engin, retourner_engin
 )
@@ -197,10 +197,12 @@ def _page_saisir(t, engins, categories_engins):
         col1, col2 = st.columns(2)
         num_serie = col1.text_input("N° Série / Identifiant *", placeholder="ENG-001")
         marque = col2.text_input("Marque *", placeholder="Caterpillar")
-        type_e = st.selectbox("Type *", categories_engins)
+        col3, col4 = st.columns(2)
+        type_e = col3.selectbox("Type *", categories_engins)
+        num_pre = col4.text_input("N° prestataire", placeholder="Référence du loueur (optionnel)")
         if st.form_submit_button("✅ Enregistrer", type="primary"):
             if num_serie and marque:
-                add_engin(num_serie, type_e, marque)
+                add_engin(num_serie, type_e, marque, num_pre.strip())
                 st.success(f"✅ {num_serie} ajouté !")
                 st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                 st.rerun()
@@ -210,11 +212,18 @@ def _page_saisir(t, engins, categories_engins):
     st.markdown("### 📋 Liste des engins")
     if engins:
         for eng in engins:
-            col1, col2 = st.columns([5, 1])
-            col1.markdown(f"<div style='background: {t['input_bg']}; border: 1px solid {t['card_border']}; border-radius: 10px; padding: 1rem; margin-bottom: 0.5rem;'><span style='color: {t['h1_color']}; font-weight: 600;'>{esc(eng['numero_serie'])}</span> <span style='color: {t['label_color']};'>— {esc(eng['type'])} {esc(eng['marque'])}</span></div>", unsafe_allow_html=True)
-            if col2.button("🗑️", key=f"del_eng_{eng['numero_serie']}"):
-                delete_engin(eng['numero_serie'])
-                st.rerun()
+            num_pre_val = eng.get('numero_prestataire', '') or ''
+            pre_badge = f" · <span style='color:{t[\"intro_color\"]};font-size:0.8rem;'>#{esc(num_pre_val)}</span>" if num_pre_val else ""
+            with st.expander(f"{eng['numero_serie']} — {eng['type']} {eng['marque']}{(' · #' + num_pre_val) if num_pre_val else ''}"):
+                col_f, col_s, col_d = st.columns([4, 1, 1])
+                new_pre = col_f.text_input("N° prestataire", value=num_pre_val, key=f"pre_{eng['numero_serie']}", placeholder="Référence du loueur")
+                if col_s.button("💾", key=f"save_pre_{eng['numero_serie']}", help="Enregistrer"):
+                    update_engin_prestataire(eng['numero_serie'], new_pre.strip())
+                    st.success("✅ Enregistré")
+                    st.rerun()
+                if col_d.button("🗑️", key=f"del_eng_{eng['numero_serie']}", help="Supprimer l'engin"):
+                    delete_engin(eng['numero_serie'])
+                    st.rerun()
     else:
         st.info("Aucun engin enregistré")
 

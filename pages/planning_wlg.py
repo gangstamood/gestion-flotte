@@ -193,6 +193,8 @@ def render_planning_wlg(t, engins, attributions_engins):
     td = (f"padding:0.55rem 0.7rem; border:1px solid {cb}; "
           f"font-size:0.85rem; vertical-align:middle;")
 
+    engin_map = {e['numero_serie']: e for e in wlg_engins}
+
     if not actifs_today:
         st.info("Aucun engin actif aujourd'hui")
     else:
@@ -207,6 +209,7 @@ def render_planning_wlg(t, engins, attributions_engins):
                 f"<div style='overflow-x:auto;margin-bottom:1.4rem;'>"
                 f"<table style='width:100%;border-collapse:collapse;'><thead><tr>"
                 f"<th style='{th} width:65px;'>ID</th>"
+                f"<th style='{th} width:90px;'>N° loueur</th>"
                 f"<th style='{th} width:130px;'>Tonnage · Fourches</th>"
                 f"<th style='{th}'>Zone assignée</th>"
                 f"<th style='{th}'>Statut clé</th>"
@@ -216,6 +219,7 @@ def render_planning_wlg(t, engins, attributions_engins):
             for eng in g_engins:
                 num = eng['numero_serie']
                 marque = eng.get('marque', '')
+                num_pre = engin_map.get(num, {}).get('numero_prestataire', '') or ''
                 zone = _get_zone_for_day(num, today, attributions_engins) or ''
                 out, entry, _ = _clef_status(num, clefs)
                 zone_color = _zone_color(zone)
@@ -237,9 +241,11 @@ def render_planning_wlg(t, engins, attributions_engins):
                     f"border-radius:12px;font-weight:600;font-size:0.82rem;'>{esc(zone)}</span>"
                 ) if zone else f"<span style='color:{ic}'>—</span>"
 
+                pre_cell = f"<span style='color:{ic};font-size:0.82rem;'>{esc(num_pre)}</span>" if num_pre else f"<span style='color:{ic};opacity:0.4;'>—</span>"
                 table += (
                     f"<tr style='{row_style}'>"
                     f"<td style='{td} font-weight:700;font-size:1.05rem;color:{hc};'>{esc(num)}</td>"
+                    f"<td style='{td}'>{pre_cell}</td>"
                     f"<td style='{td} color:{ic};font-size:0.8rem;'>{esc(marque)}</td>"
                     f"<td style='{td}'>{zone_badge}</td>"
                     f"<td style='{td}'>{clef_cell}</td>"
