@@ -13,46 +13,57 @@
 
 ```
 gestion-flotte/
-├── app.py              # Point d'entrée + configuration
-├── auth.py             # Authentification (check_password)
-├── hamburger.py        # Bouton hamburger JS (inject_hamburger)
-├── sidebar.py          # Navigation + alertes (render_sidebar)
-├── database.py         # Connexion Google Sheets + fonctions CRUD
-├── pdf.py              # Génération PDF (bons carburant)
-├── styles.py           # Thèmes CSS (THEMES dict + get_css)
-├── alertes.py          # Fonctions d'alertes
-├── pages/              # Modules de pages
+├── app.py                        # Point d'entrée + configuration
+├── auth.py                       # Authentification (check_password)
+├── hamburger.py                  # Bouton hamburger JS (inject_hamburger)
+├── sidebar.py                    # Navigation + alertes (render_sidebar)
+├── database.py                   # Connexion Google Sheets + fonctions CRUD
+├── pdf.py                        # Génération PDF (bons carburant)
+├── styles.py                     # Thèmes CSS (THEMES dict + get_css)
+├── alertes.py                    # Fonctions d'alertes
+├── import_wlg.py                 # Script import Excel → GSheets (engins WLG26)
+├── pages/
 │   ├── __init__.py
-│   ├── dashboard.py    # Vue d'ensemble
-│   ├── vehicules.py    # Saisie, attribution, carburant, interventions
-│   ├── scooters.py     # Saisie, attribution, interventions
-│   ├── engins.py       # Saisie, attribution (planning), interventions
-│   └── parametres.py   # Thèmes, catégories, services, liens
+│   ├── dashboard.py              # Vue d'ensemble
+│   ├── vehicules.py              # Saisie, attribution, carburant, interventions
+│   ├── scooters.py               # Saisie, attribution, interventions
+│   ├── engins.py                 # Saisie, attribution (planning), interventions
+│   ├── golfettes.py              # Saisie, attribution (planning), interventions
+│   ├── distribution_clefs.py     # Distribution clés toutes catégories
+│   ├── planning_wlg.py           # Planning engins WLG26 (rush + semaine)
+│   ├── planning_golfettes_wlg.py # Planning golfettes WLG26
+│   ├── interventions_wlg.py      # Interventions WLG26 (engins + golfettes)
+│   └── parametres.py             # Thèmes, catégories, services, liens
 ├── .streamlit/
-│   └── config.toml     # Config Streamlit
-└── requirements.txt    # Dépendances Python
+│   └── config.toml               # Config Streamlit
+└── requirements.txt              # Dépendances Python
 ```
 
 ---
 
 ## Fichiers
 
-| Fichier | Lignes | Description |
-|---------|--------|-------------|
-| `app.py` | ~75 | Point d'entrée, config, chargement données, routeur |
-| `auth.py` | ~25 | Authentification — `check_password(t)` |
-| `hamburger.py` | ~75 | Bouton hamburger JS — `inject_hamburger(t)` |
-| `sidebar.py` | ~80 | Navigation + alertes — `render_sidebar(t, ...)` |
-| `database.py` | ~230 | Connexion GSheets + CRUD complet |
-| `pdf.py` | ~45 | Génération PDF bons carburant — `generer_pdf_bon(...)` |
-| `styles.py` | ~240 | 4 thèmes + CSS injecté — `THEMES`, `get_css(t)` |
-| `alertes.py` | ~72 | Fonctions d'alertes |
-| `pages/__init__.py` | 0 | Package Python |
-| `pages/dashboard.py` | ~230 | `render_dashboard(t, ...)` |
-| `pages/vehicules.py` | ~190 | `render_vehicules(page, t, ...)` — 4 sous-pages |
-| `pages/scooters.py` | ~130 | `render_scooters(page, t, ...)` — 3 sous-pages |
-| `pages/engins.py` | ~185 | `render_engins(page, t, ...)` — 3 sous-pages |
-| `pages/parametres.py` | ~90 | `render_parametres(t, ...)` |
+| Fichier | Description |
+|---------|-------------|
+| `app.py` | Point d'entrée, config, chargement données, routeur |
+| `auth.py` | Authentification — `check_password(t)` |
+| `hamburger.py` | Bouton hamburger JS — `inject_hamburger(t)` |
+| `sidebar.py` | Navigation + alertes — `render_sidebar(t, ...)` |
+| `database.py` | Connexion GSheets + CRUD complet (toutes entités) |
+| `pdf.py` | Génération PDF bons carburant — `generer_pdf_bon(...)` |
+| `styles.py` | 4 thèmes + CSS injecté — `THEMES`, `get_css(t)` |
+| `alertes.py` | Fonctions d'alertes (véhicules, scooters, engins, golfettes) |
+| `import_wlg.py` | Import Excel WLG26 → GSheets (standalone, utilise .venv) |
+| `pages/dashboard.py` | `render_dashboard(t, ...)` |
+| `pages/vehicules.py` | `render_vehicules(page, t, ...)` — 4 sous-pages |
+| `pages/scooters.py` | `render_scooters(page, t, ...)` — 3 sous-pages |
+| `pages/engins.py` | `render_engins(page, t, ...)` — 4 sous-pages |
+| `pages/golfettes.py` | `render_golfettes(page, t, ...)` — 4 sous-pages |
+| `pages/distribution_clefs.py` | `render_distribution_clefs(t, engins, vehicules, scooters, golfettes)` |
+| `pages/planning_wlg.py` | `render_planning_wlg(t, engins, attributions_engins)` |
+| `pages/planning_golfettes_wlg.py` | `render_planning_golfettes_wlg(t, golfettes, attributions_golfettes)` |
+| `pages/interventions_wlg.py` | `render_interventions_wlg(t, engins, golfettes, interventions_engins, interventions_golfettes)` |
+| `pages/parametres.py` | `render_parametres(t, categories, services, categories_engins, categories_scooters, categories_golfettes, liens)` |
 
 ---
 
@@ -74,74 +85,67 @@ spreadsheet_id = "..."
 ### app.py (Point d'entrée)
 - Configuration de la page (`st.set_page_config`)
 - Initialisation du thème + injection CSS
-- Appel `inject_hamburger(t)`
-- Appel `check_password(t)`
+- Appel `inject_hamburger(t)` + `check_password(t)`
 - Appel `init_database()` + `_load_all_sheets()`
-- Chargement et dérivation des données en variables locales
-- Initialisation `st.session_state` (page, dashboard_detail, eng_sem_offset)
+- Chargement et dérivation des données en variables locales (toutes entités + golfettes + distribution_clefs)
+- Initialisation `st.session_state` (page, dashboard_detail, eng_sem_offset, wlg_sem_offset, wlg_golf_sem_offset, golf_sem_offset, _fk)
 - Appel `render_sidebar(...)`
-- Routeur : dispatche vers `render_dashboard / render_vehicules / render_scooters / render_engins / render_parametres`
-
-### auth.py
-- `check_password(t)` — Authentification par mot de passe, affiche login si besoin
-
-### hamburger.py
-- `inject_hamburger(t)` — Injecte le bouton hamburger JS via `components.html`
-
-### sidebar.py
-- `render_sidebar(t, attributions, attributions_scooters, attributions_engins, services)` — Sidebar complète avec navigation et alertes
+- Routeur : dispatche vers toutes les pages selon `st.session_state.page`
 
 ### database.py (CRUD)
 - `get_sheets_service()` — Connexion Google Sheets (cached)
 - `read_sheet()` / `write_sheet()` — Opérations de base
-- `_load_all_sheets()` — Chargement batch avec cache 60s
+- `_load_all_sheets()` — Chargement batch avec cache 60s (toutes les feuilles)
 - `init_database()` — Création des feuilles manquantes
-- CRUD Véhicules, Scooters, Engins
-- CRUD Attributions (3 types)
-- CRUD Catégories, Services, Interventions
+- CRUD Véhicules, Scooters, Engins, **Golfettes**
+- CRUD Attributions (4 types : vehicules, scooters, engins, golfettes)
+- CRUD Catégories (4 types), Services, Interventions (4 types)
 - CRUD Carburant, Liens
-
-### pdf.py
-- `generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None)` → BytesIO
-
-### pages/dashboard.py
-- `render_dashboard(t, vehicules, attributions, scooters, attributions_scooters, engins, attributions_engins, interventions, interventions_scooters, interventions_engins, services, liens)`
-
-### pages/vehicules.py
-- `render_vehicules(page, t, vehicules, attributions, categories, services, bons_carburant, interventions)` — dispatche vers 4 sous-pages
-
-### pages/scooters.py
-- `render_scooters(page, t, scooters, attributions_scooters, categories_scooters, services, interventions_scooters)` — dispatche vers 3 sous-pages
-
-### pages/engins.py
-- `render_engins(page, t, engins, attributions_engins, categories_engins, services, interventions_engins)` — dispatche vers 3 sous-pages
-
-### pages/parametres.py
-- `render_parametres(t, categories, services, categories_engins, categories_scooters, liens)`
-
-### styles.py
-- `THEMES` — Dictionnaire de 4 thèmes
-- `get_css(t)` — CSS injecté via `st.markdown()`
+- **CRUD Distribution Clefs** : `get_distribution_clefs()`, `add_distribution_clef(categorie, identifiant, nom, commentaire)`, `retour_clef(idx)`
 
 ### alertes.py
-- `verifier_alertes()` — Véhicules à retourner
-- `verifier_alertes_scooters()` — Scooters à retourner
-- `verifier_alertes_engins()` — Engins à retourner
+- `verifier_alertes(attributions)` — véhicules, retour <= 2 jours
+- `verifier_alertes_scooters(attributions)` — scooters, retour <= 2 jours
+- `verifier_alertes_engins(attributions)` — engins dont date_fin < today et non retournés
+- `verifier_alertes_golfettes(attributions)` — golfettes dont date_fin < today et non retournées
+
+### import_wlg.py (script standalone)
+- Lit `PLANNING ENGINS WLG26 EN COURS.xlsx` depuis `/Users/alan/Downloads/`
+- Filtre regex `^[CTN]\d+$` (C=chariots, T=télescopiques, N=nacelles ; exclut cuves et tire-palles)
+- Marque construction :
+  - Chariots : `f"{taille} · {fourches}"` (longues/courtes) ou juste taille
+  - Nacelles : `f"{taille} · {subtype}"` (4RM/BOOM) ou juste taille
+  - Télescopiques : taille uniquement
+- Met à jour les engins existants (marque) + ajoute les nouveaux
+- Usage : `.venv/bin/python3 import_wlg.py`
+
+### pages/planning_wlg.py
+- `_is_wlg(num)` — regex `^[CTN]\d+$`
+- `_get_zone_for_day(num_serie, day, attributions)` — "most specific attribution wins" (plus courte durée de date range)
+- `_clef_status(num_serie, clefs)` — (en_circulation, entry, idx) pour categorie='engin'
+- Distribution : selectbox hors form → checkbox "⚠️ Confirmer la mise en circulation anticipée" si engin inactif → form nom + commentaire
+- Sections : clés en circulation → distribuer → tableau statut groupé (C/T/N) → planning semaine → ajuster (expander)
+
+### pages/planning_golfettes_wlg.py
+- Même structure que planning_wlg.py mais pour golfettes (pas de filtre regex, toutes sont WLG)
+- categorie='golfette' pour `add_distribution_clef`
+
+### pages/interventions_wlg.py
+- Deux onglets : 🚜 Engins / ⛳ Golfettes
+- Filtre WLG engins : `_is_wlg(num)` regex `^[CTN]\d+$`
+- `_render_liste_interventions` : "En cours" inline, autres dans expander
+- `_render_card` : carte colorée avec border-left selon statut
 
 ---
 
-## Data Model (15 feuilles Google Sheets)
+## Data Model (Google Sheets)
 
 ### vehicules
-| Colonne | Description |
-|---------|-------------|
 | immatriculation | Clé primaire (ex: AB-123-CD) |
-| type | Catégorie (FK categories) |
+| type | FK categories |
 | marque | Marque du véhicule |
 
 ### attributions
-| Colonne | Description |
-|---------|-------------|
 | immatriculation | FK vehicules |
 | service | FK services |
 | date | Date sortie (JJ/MM/AAAA) |
@@ -149,56 +153,38 @@ spreadsheet_id = "..."
 | date_retour_prevue | Date retour prévue (JJ/MM/AAAA) |
 | retourne | Vide ou JJ/MM/AAAA HH:MM |
 
-### scooters
-| Colonne | Description |
-|---------|-------------|
-| immatriculation | Clé primaire |
-| type | Catégorie (FK categories_scooters) |
-| marque | Marque |
-
-### attributions_scooters
-| Colonne | Description |
-|---------|-------------|
-| immatriculation | FK scooters |
-| service | FK services |
-| date | Date sortie |
-| heure | Heure sortie |
-| date_retour_prevue | Date retour prévue |
-| casque | Référence casque attribué |
-| retourne | Vide ou datetime retour |
+### scooters / attributions_scooters
+- Même modèle que vehicules, avec champ `casque` dans attributions_scooters
 
 ### engins
-| Colonne | Description |
-|---------|-------------|
-| numero_serie | Clé primaire |
-| type | Catégorie (FK categories_engins) |
-| marque | Marque |
+| numero_serie | Clé primaire (ex: C6, T3, N2) |
+| type | FK categories_engins |
+| marque | Taille · fourches/subtype (ex: "3T · Courtes", "18m · 4RM") |
 
 ### attributions_engins
-| Colonne | Description |
-|---------|-------------|
 | numero_serie | FK engins |
-| service | FK services |
+| service | Zone WLG (SITE 1, LENI, PRAIRIE…) ou service municipal |
 | date | Date de début (JJ/MM/AAAA) |
-| date_fin | Date de fin de la période (JJ/MM/AAAA) |
+| date_fin | Date de fin (JJ/MM/AAAA) |
 | periode | Journée / Matin / Après-midi |
-| retourne | Vide ou datetime retour effectif (override date_fin) |
+| retourne | Vide ou datetime retour effectif |
 
-### categories / categories_engins / categories_scooters
-| Colonne | Défauts |
-|---------|---------|
-| nom | Véhicules: Camion, Fourgon, Tractopelle, Tondeuse, Utilitaire, Autre |
-| nom | Engins: Tractopelle, Tondeuse, Compacteur, Nacelle, Mini-pelle, Autre |
-| nom | Scooters: 50cc, 125cc, Électrique, Autre |
+### golfettes
+| numero_serie | Clé primaire (ex: G1, G12) |
+| type | FK categories_golfettes |
+| marque | Marque |
+
+### attributions_golfettes
+- Même modèle que attributions_engins
+
+### categories / categories_engins / categories_scooters / categories_golfettes
+| nom | Défauts golfettes : Électrique, Thermique, Autre |
 
 ### services
-| Colonne | Défauts |
-|---------|---------|
-| nom | Voirie, Bâtiment, Espaces verts |
+| nom | Voirie, Bâtiment, Espaces verts (services municipaux) |
+**Note** : les zones WLG (SITE 1, LENI, PRAIRIE…) sont stockées directement dans `attributions_engins.service` sans passer par la table services.
 
-### interventions / interventions_engins / interventions_scooters
-| Colonne | Description |
-|---------|-------------|
+### interventions / interventions_engins / interventions_scooters / interventions_golfettes
 | immatriculation/numero_serie | FK entité |
 | type | Panne, Entretien, Réparation, Contrôle, Autre |
 | date | JJ/MM/AAAA |
@@ -206,9 +192,18 @@ spreadsheet_id = "..."
 | commentaire | Description libre |
 | statut | En cours, Terminée, En attente |
 
+### distribution_clefs
+| date | JJ/MM/AAAA |
+| heure | HH:MM |
+| categorie | vehicule / scooter / engin / golfette |
+| identifiant | immatriculation ou numero_serie |
+| nom | Prénom NOM du preneur |
+| commentaire | Optionnel |
+| retour_clef | Vide ou datetime retour |
+| ext_sheet | (sync Google Sheet externe WLG) |
+| ext_row | (sync Google Sheet externe WLG) |
+
 ### carburant
-| Colonne | Description |
-|---------|-------------|
 | numero_bon | BC-YYYYMMDDHHmmss |
 | immatriculation | FK vehicules |
 | service | FK services |
@@ -216,14 +211,12 @@ spreadsheet_id = "..."
 | numero_carte | N° carte carburant |
 | conducteur_nom / conducteur_prenom | Identité conducteur |
 | type_carburant | Diesel, SP95, SP98, GPL, Électrique |
-| volume | Litres (string, converti en numeric) |
-| montant | Euros (string, converti en numeric) |
+| volume | Litres |
+| montant | Euros |
 | notes | Optionnel |
 | statut | Non saisi / Saisi |
 
 ### liens
-| Colonne | Description |
-|---------|-------------|
 | nom | Libellé affiché sur le bouton du Dashboard |
 | url | URL complète vers le tableau Excel / Google Sheets |
 
@@ -232,49 +225,37 @@ spreadsheet_id = "..."
 ## Fonctions CRUD complètes
 
 ### Véhicules
-- `get_vehicules()` → `read_sheet('vehicules')`
 - `add_vehicule(immat, type_v, marque)` — anti-doublon
-- `delete_vehicule(immat)`
-- `get_attributions()` → `read_sheet('attributions')`
-- `add_attribution(immat, service, date, heure, date_retour_prevue)`
-- `retourner_vehicule(immat)` — marque la dernière attribution non retournée
-- `update_attribution(idx, data)` — modification par index
-- `delete_attribution(idx)` — suppression par index
+- `retourner_vehicule(immat)`, `update_attribution(idx, data)`, `delete_attribution(idx)`
 
 ### Scooters
-- `get_scooters()` / `add_scooter()` / `delete_scooter()`
-- `get_attributions_scooters()` / `add_attribution_scooter(immat, service, date, heure, date_retour_prevue, casque="")`
-- `retourner_scooter(immat)`
-- `update_attribution_scooter(idx, data)` / `delete_attribution_scooter(idx)`
+- `add_scooter()`, `retourner_scooter(immat)`, `add_attribution_scooter(..., casque="")`
 
 ### Engins
-- `get_engins()` / `add_engin()` / `delete_engin()`
-- `_is_engin_active_today(attr)` — True si date_debut ≤ today ≤ date_fin et non retourné
-- `get_attributions_engins()` / `add_attribution_engin(num_serie, service, date_debut, date_fin, periode)`
-- `retourner_engin(num_serie)` — marque retourne avec datetime actuel
-- `update_attribution_engin(idx, data)` / `delete_attribution_engin(idx)`
+- `add_engin()`, `retourner_engin(num_serie)`, `add_attribution_engin(num_serie, service, date_debut, date_fin, periode)`
+- `update_attribution_engin(idx, data)`, `delete_attribution_engin(idx)`
+
+### Golfettes
+- `get_golfettes()` / `add_golfette()` / `delete_golfette()`
+- `get_attributions_golfettes()` / `add_attribution_golfette(num_serie, service, date_debut, date_fin, periode)`
+- `retourner_golfette(num_serie)`
+- `update_attribution_golfette(idx, data)` / `delete_attribution_golfette(idx)`
+- `get_interventions_golfettes()` / `add_intervention_golfette(num_serie, type_i, date, heure, comm, statut)`
+
+### Distribution Clefs
+- `get_distribution_clefs()` → liste triée par date/heure desc
+- `add_distribution_clef(categorie, identifiant, nom, commentaire="")` — ajoute avec date/heure courante
+- `retour_clef(idx)` — marque retour_clef avec datetime actuel
 
 ### Catégories & Services
-- `get_categories()` / `add_category(nom)` / `delete_category(nom)` — avec défauts
-- `get_categories_engins()` / `add_category_engin()` / `delete_category_engin()`
-- `get_categories_scooters()` / `add_category_scooter()` / `delete_category_scooter()`
-- `get_services()` / `add_service(nom)` / `delete_service(nom)` — avec défauts
-
-### Interventions
-- `get_interventions()` / `add_intervention(immat, type_i, date, heure, comm, statut)`
-- `get_interventions_engins()` / `add_intervention_engin(num_serie, ...)`
-- `get_interventions_scooters()` / `add_intervention_scooter(immat, ...)`
-
-### Carburant
-- `get_carburant()` / `add_bon_carburant(bon)` / `update_bon_carburant(numero_bon, type_carb, volume, montant)` / `delete_bon_carburant(numero_bon)`
-
-### Liens
-- `get_liens()` / `add_lien(nom, url)` — anti-doublon sur `nom` / `delete_lien(nom)`
+- `get_categories()` / `add_category(nom)` / `delete_category(nom)` (idem pour engins, scooters, golfettes)
+- `get_services()` / `add_service(nom)` / `delete_service(nom)`
 
 ### Alertes
 - `verifier_alertes(attributions)` — véhicules, retour <= 2 jours
 - `verifier_alertes_scooters(attributions)` — scooters, retour <= 2 jours
 - `verifier_alertes_engins(attributions)` — engins dont date_fin < today et non retournés
+- `verifier_alertes_golfettes(attributions)` — golfettes dont date_fin < today et non retournées
 
 ### PDF
 - `generer_pdf_bon(bon, conducteur_nom, conducteur_prenom, logo_url=None)` → BytesIO
@@ -285,7 +266,11 @@ spreadsheet_id = "..."
 
 | Page | Clé nav | Contenu |
 |------|---------|---------|
-| Dashboard | 📊 Dashboard | Boutons liens Excel (si configurés), métriques, détails par type, sorties/retours du jour, retourner véhicule/scooter/engin |
+| Dashboard | 📊 Dashboard | Métriques, détails par type, sorties/retours du jour, retourner entité, boutons liens |
+| Distribution Clés | 🔑 Distribution Clés | Vue clés en circulation par catégorie + distribution toutes catégories |
+| Planning Engins WLG | 🎪 Planning Engins WLG | Rush mode (clés en circulation + distribuer avec confirmation anticipée) + statut groupé C/T/N + planning semaine coloré par zone + ajuster attribution |
+| Planning Golfettes WLG | ⛳ Planning Golfettes WLG | Même structure pour golfettes |
+| Interventions WLG | 🔨 Interventions WLG | Déclarer + suivre interventions engins et golfettes WLG (2 onglets) |
 | Saisir véhicule | ➕ Saisir un véhicule | Formulaire ajout + liste avec suppression |
 | Attribuer véhicule | 🔧 Attribuer un véhicule | Formulaire + historique éditable |
 | Bons carburant | ⛽ Bons de Carburant | Générer bon PDF + saisie retour |
@@ -293,10 +278,15 @@ spreadsheet_id = "..."
 | Saisir scooter | 🛵 Saisir un scooter | Formulaire ajout + liste |
 | Attribuer scooter | 🔧 Attribuer un scooter | Formulaire (avec casque) + historique éditable |
 | Interventions SCO | 🔨 Interventions Scooters | Déclarer + historique |
+| Vue Engins | 📊 Vue Engins | Tableau de bord opérationnel engins |
 | Saisir engin | 🚜 Saisir un engin | Formulaire ajout + liste |
-| Attribuer engin | 🔧 Attribuer un engin | Planning semaine (grille HTML colorée par service, navigation ±semaine) + formulaire période (date_debut/date_fin/periode) + historique éditable |
+| Attribuer engin | 🔧 Attribuer un engin | Planning semaine + formulaire période + historique éditable |
 | Interventions ENG | 🔨 Interventions Engins | Déclarer + historique |
-| Paramètres | ⚙️ Paramètres | Thème + gestion catégories/services + gestion liens Excel (📎) |
+| Vue Golfettes | 📊 Vue Golfettes | Tableau de bord golfettes |
+| Saisir golfette | ⛳ Saisir une golfette | Formulaire ajout + liste |
+| Attribuer golfette | 🔧 Attribuer une golfette | Planning semaine + formulaire période + historique éditable |
+| Interventions GOLF | 🔨 Interventions Golfettes | Déclarer + historique |
+| Paramètres | ⚙️ Paramètres | Thème + gestion catégories/services + gestion liens Excel |
 
 ---
 
@@ -305,6 +295,11 @@ spreadsheet_id = "..."
 ```
 🚗 Flotte (titre)
 ├── 📊 Dashboard (bouton principal)
+├── 🔑 Distribution Clés (bouton principal)
+├── 🎪 WLG26 (expander)
+│   ├── Planning Engins WLG
+│   ├── Planning Golfettes WLG
+│   └── Interventions WLG
 ├── 🚗 Véhicules (expander)
 │   ├── Saisir un véhicule
 │   ├── Attribuer un véhicule
@@ -315,13 +310,20 @@ spreadsheet_id = "..."
 │   ├── Attribuer un scooter
 │   └── Interventions Scooters
 ├── 🚜 Engins (expander)
+│   ├── Vue Engins
 │   ├── Saisir un engin
 │   ├── Attribuer un engin
 │   └── Interventions Engins
+├── ⛳ Golfettes (expander)
+│   ├── Vue Golfettes
+│   ├── Saisir une golfette
+│   ├── Attribuer une golfette
+│   └── Interventions Golfettes
 ├── ⚙️ Paramètres (bouton principal)
 ├── ── Alertes ──
 │   ├── 🚨 Véhicules à retourner
 │   ├── 🚜 Engins à retourner
+│   ├── ⛳ Golfettes à retourner
 │   └── 🛵 Scooters à retourner
 └── 🗄️ Base connectée
 ```
@@ -334,7 +336,7 @@ Expanders ouverts auto quand page active dans la catégorie.
 ## Système de cache
 
 ```
-Premier chargement : 1 appel batchGet (14 feuilles)
+Premier chargement : 1 appel batchGet (toutes feuilles)
     ↓ cache 60s
 Navigations suivantes : 0 appel API (instantané)
     ↓ si écriture
@@ -345,7 +347,6 @@ Prochain rerun : 1 appel batchGet (données fraîches)
 
 - `@st.cache_resource` : connexion Google Sheets (permanent)
 - `@st.cache_data(ttl=60)` : données des feuilles (60s)
-- Les fonctions CRUD utilisent `read_sheet()` non-caché pour garantir la fraîcheur lors des écritures
 
 ---
 
@@ -353,15 +354,29 @@ Prochain rerun : 1 appel batchGet (données fraîches)
 - `theme` — nom du thème actif
 - `password_correct` — booléen auth
 - `page` — page de navigation courante
-- `dashboard_detail` — vue détail du dashboard (vehicules/scooters/engins/None)
+- `dashboard_detail` — vue détail du dashboard (vehicules/scooters/engins/golfettes/None)
 - `dernier_bon` — dernier bon carburant généré (pour PDF)
-- `eng_sem_offset` — décalage semaine planning engins
+- `eng_sem_offset` — décalage semaine planning engins (page engins)
+- `wlg_sem_offset` — décalage semaine planning engins WLG
+- `wlg_golf_sem_offset` — décalage semaine planning golfettes WLG
+- `golf_sem_offset` — décalage semaine planning golfettes (page golfettes)
+- `_fk` — compteur form key (incrémenté après soumission réussie pour reset les forms)
 
 ---
 
 ## Patterns de clés formulaires
-- `f"edit_attr_vh_{idx}"` / `f"edit_attr_sco_{idx}"` / `f"edit_attr_eng_{idx}"` — forms édition
-- `f"srv_vh_{idx}"` / `f"dr_vh_{idx}"` / `f"ds_vh_{idx}"` / `f"hs_vh_{idx}"` — champs véhicules
-- `f"srv_sco_{idx}"` / `f"dr_sco_{idx}"` / `f"cq_sco_{idx}"` — champs scooters
-- `f"srv_eng_{idx}"` / `f"ds_eng_{idx}"` / `f"hs_eng_{idx}"` — champs engins
-- `f"del_{immat}"` / `f"del_sco_{immat}"` / `f"del_eng_{num}"` — boutons suppression entités
+- `f"edit_attr_vh_{idx}"` / `f"edit_attr_sco_{idx}"` / `f"edit_attr_eng_{idx}"` / `f"edit_attr_golf_{idx}"` — forms édition
+- `f"wlg_sel_engin"` / `f"wlg_sel_golf"` — selectbox distribution WLG (hors form)
+- `f"wlg_early_{sel_num}"` / `f"wlg_golf_early_{sel_num}"` — checkbox confirmation anticipée
+- `f"del_{immat}"` / `f"del_sco_{immat}"` / `f"del_eng_{num}"` / `f"del_golf_{num}"` — boutons suppression
+
+---
+
+## WLG26 — Conventions spécifiques
+
+- **Engins WLG** : filtré par regex `^[CTN]\d+$` — C=chariots (C1-C24), T=télescopiques (T1-T8), N=nacelles (N1-N9)
+- **Golfettes WLG** : toutes les golfettes en DB sont WLG (G1-G21+)
+- **Zones** : noms libres dans `attributions.service` (SITE 1, LENI, PRAIRIE, etc.) — ne pas confondre avec la table `services` (services municipaux)
+- **Couleurs zones** : `abs(hash(zone)) % len(palette)` — couleur stable par nom de zone
+- **Attribution "most specific"** : quand plusieurs attributions couvrent un même jour, la plus courte durée (date range) l'emporte — permet les overrides journaliers
+- **Livraison anticipée** : engin présent mais pas encore dans sa période active → dropdown affiche juste l'ID, checkbox de confirmation requise avant distribution
