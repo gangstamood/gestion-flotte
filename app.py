@@ -95,7 +95,7 @@ if page == "📊 Dashboard":
 elif page == "🔑 Distribution Clés":
     render_distribution_clefs(t, engins, vehicules, scooters, golfettes)
 elif page in ("🎪 Planning WLG", "🎪 Planning Engins WLG"):
-    render_planning_wlg(t, engins, attributions_engins)
+    render_planning_wlg(t, engins, attributions_engins, interventions_engins)
 elif page == "⛳ Planning Golfettes WLG":
     render_planning_golfettes_wlg(t, golfettes, attributions_golfettes)
 elif page == "🔨 Interventions WLG":

@@ -70,11 +70,12 @@ def _clef_status(num_serie, clefs):
     return False, None, None
 
 
-def render_planning_wlg(t, engins, attributions_engins):
+def render_planning_wlg(t, engins, attributions_engins, interventions_engins=None):
     today = datetime.now().date()
 
     wlg_engins = [e for e in engins if _is_wlg(e.get('numero_serie', ''))]
     wlg_engins.sort(key=_sort_key)
+    wlg_ids = {e['numero_serie'] for e in wlg_engins}
 
     clefs = get_distribution_clefs()
 
@@ -89,6 +90,13 @@ def render_planning_wlg(t, engins, attributions_engins):
     circ_ids = {e['numero_serie'] for e, _, _ in en_circulation}
     disponibles = [e for e in actifs_today if e['numero_serie'] not in circ_ids]
 
+    # Engins WLG avec au moins une intervention "En cours"
+    en_intervention_ids = set()
+    for iv in (interventions_engins or []):
+        if iv.get('statut') == 'En cours' and iv.get('numero_serie') in wlg_ids:
+            en_intervention_ids.add(iv['numero_serie'])
+    nb_intervention = len(en_intervention_ids)
+
     # En-tête
     st.markdown("# 🎪 Planning WLG26")
     JOURS_LONG = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
@@ -97,11 +105,12 @@ def render_planning_wlg(t, engins, attributions_engins):
     today_str = f"{JOURS_LONG[today.weekday()]} {today.day} {MOIS_FR[today.month - 1]} {today.year}"
     st.markdown(f"<p class='page-intro'>{today_str}</p>", unsafe_allow_html=True)
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("🚜 Engins WLG", len(wlg_engins))
     c2.metric("📅 Actifs aujourd'hui", len(actifs_today))
     c3.metric("🔴 Clés en circulation", len(en_circulation))
     c4.metric("🟢 Disponibles", len(disponibles))
+    c5.metric("🔨 En intervention", nb_intervention)
 
     st.markdown("---")
 
