@@ -16,14 +16,48 @@ def _is_wlg(num):
     return bool(re.match(r'^[CTN]\d+$', str(num)))
 
 
-def render_interventions_wlg(t, engins, golfettes, interventions_engins, interventions_golfettes, parametres=None):
+def _render_fiche_contact(t, contacts, categorie):
+    """Affiche la fiche contacts pour une catégorie (engins ou golfettes)."""
+    fiches = [c for c in contacts if c.get('categorie') == categorie]
+    if not fiches:
+        return
+    ic = t['intro_color']
+    hc = t['h23_color']
+    cb = t['card_border']
+    bg = t['card_bg']
+    label = "🚜 Contacts Engins" if categorie == 'engins' else "⛳ Contacts Golfettes"
+    cards = "".join(
+        f"<div style='flex:1;min-width:160px;'>"
+        f"<span style='color:{hc};font-weight:700;font-size:0.95rem;'>{esc(c.get('nom',''))}</span><br>"
+        f"<span style='color:{ic};font-size:0.85rem;'>📞 <b>{esc(c.get('telephone',''))}</b></span><br>"
+        f"<span style='color:{ic};font-size:0.82rem;'>🕐 {esc(c.get('horaires',''))}</span>"
+        f"</div>"
+        for c in fiches
+    )
+    st.markdown(
+        f"<div style='background:{bg};border:1px solid {cb};border-left:4px solid #3b82f6;"
+        f"border-radius:10px;padding:0.8rem 1.2rem;margin-bottom:1rem;'>"
+        f"<div style='color:#3b82f6;font-weight:700;font-size:0.82rem;margin-bottom:0.5rem;'>"
+        f"📋 {label}</div>"
+        f"<div style='display:flex;gap:2rem;flex-wrap:wrap;'>{cards}</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_interventions_wlg(t, engins, golfettes, interventions_engins, interventions_golfettes, contacts_wlg=None):
     st.markdown("# 🔨 Interventions WLG26")
     st.markdown("<p class='page-intro'>Déclarer et suivre les interventions sur engins et golfettes</p>",
                 unsafe_allow_html=True)
 
-    p = parametres or {}
-    default_tel = p.get('contact_telephone', '')
-    default_hor = p.get('contact_horaires', '')
+    contacts = contacts_wlg or []
+    # Pré-remplissage formulaire depuis le premier contact de chaque catégorie
+    first_eng = next((c for c in contacts if c.get('categorie') == 'engins'), {})
+    first_golf = next((c for c in contacts if c.get('categorie') == 'golfettes'), {})
+    default_tel_eng = first_eng.get('telephone', '')
+    default_hor_eng = first_eng.get('horaires', '')
+    default_tel_golf = first_golf.get('telephone', '')
+    default_hor_golf = first_golf.get('horaires', '')
 
     wlg_engins = [e for e in engins if _is_wlg(e.get('numero_serie', ''))]
     wlg_interv_engins = [i for i in interventions_engins if _is_wlg(i.get('numero_serie', ''))]
@@ -44,6 +78,7 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
 
     # ── ONGLET ENGINS ─────────────────────────────────────────────────────
     with tab_engins:
+        _render_fiche_contact(t, contacts, 'engins')
         st.markdown("### ➕ Déclarer une intervention")
         if wlg_engins:
             with st.form(f"form_interv_engin_wlg_{st.session_state.get('_fk', 0)}"):
@@ -57,8 +92,8 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
                 comm = st.text_area("Description *", height=90, placeholder="Décrivez le problème ou l'intervention…")
                 col5, col6, col7 = st.columns(3)
                 statut = col5.selectbox("Statut", STATUTS)
-                telephone = col6.text_input("📞 N° à appeler", value=default_tel, placeholder="06 XX XX XX XX")
-                horaires = col7.text_input("🕐 Horaires", value=default_hor, placeholder="8h-12h / 14h-17h")
+                telephone = col6.text_input("📞 N° à appeler", value=default_tel_eng, placeholder="06 XX XX XX XX")
+                horaires = col7.text_input("🕐 Horaires", value=default_hor_eng, placeholder="8h-12h / 14h-17h")
                 if st.form_submit_button("✅ Enregistrer", type="primary"):
                     if comm.strip():
                         num = eng_sel.split(" — ")[0]
@@ -83,6 +118,7 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
 
     # ── ONGLET GOLFETTES ──────────────────────────────────────────────────
     with tab_golf:
+        _render_fiche_contact(t, contacts, 'golfettes')
         st.markdown("### ➕ Déclarer une intervention")
         if golfettes:
             with st.form(f"form_interv_golf_wlg_{st.session_state.get('_fk', 0)}"):
@@ -98,8 +134,8 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
                                     key="golf_comm")
                 col5g, col6g, col7g = st.columns(3)
                 statut = col5g.selectbox("Statut", STATUTS, key="golf_statut")
-                telephone = col6g.text_input("📞 N° à appeler", value=default_tel, placeholder="06 XX XX XX XX", key="golf_tel")
-                horaires = col7g.text_input("🕐 Horaires", value=default_hor, placeholder="8h-12h / 14h-17h", key="golf_hor")
+                telephone = col6g.text_input("📞 N° à appeler", value=default_tel_golf, placeholder="06 XX XX XX XX", key="golf_tel")
+                horaires = col7g.text_input("🕐 Horaires", value=default_hor_golf, placeholder="8h-12h / 14h-17h", key="golf_hor")
                 if st.form_submit_button("✅ Enregistrer", type="primary"):
                     if comm.strip():
                         num = golf_sel.split(" — ")[0]

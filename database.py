@@ -23,7 +23,7 @@ ALL_SHEET_NAMES = [
     'interventions_engins', 'scooters', 'attributions_scooters',
     'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules',
     'distribution_clefs', 'golfettes', 'attributions_golfettes',
-    'categories_golfettes', 'interventions_golfettes', 'parametres'
+    'categories_golfettes', 'interventions_golfettes', 'parametres', 'contacts_wlg'
 ]
 
 DISTRIB_EXT_ID = "1lHvCjEL-KZ0llBPKiZrWocOcHlcAoQkW5d72KShi1GY"
@@ -84,7 +84,7 @@ def init_database():
     try:
         sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
         existing_sheets = [s['properties']['title'] for s in sheet_metadata['sheets']]
-        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules', 'distribution_clefs', 'golfettes', 'attributions_golfettes', 'categories_golfettes', 'interventions_golfettes', 'parametres']
+        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules', 'distribution_clefs', 'golfettes', 'attributions_golfettes', 'categories_golfettes', 'interventions_golfettes', 'parametres', 'contacts_wlg']
         for sheet_name in required_sheets:
             if sheet_name not in existing_sheets:
                 sheets_service.spreadsheets().batchUpdate(
@@ -556,6 +556,22 @@ def _cocher_retour_externe(entry):
         pass
     except Exception:
         pass
+
+
+# CRUD CONTACTS WLG
+def get_contacts_wlg():
+    return read_sheet('contacts_wlg')
+
+def add_contact_wlg(categorie, nom, telephone, horaires):
+    contacts = get_contacts_wlg()
+    contacts.append({'categorie': categorie, 'nom': nom, 'telephone': telephone, 'horaires': horaires})
+    write_sheet('contacts_wlg', contacts)
+
+def delete_contact_wlg(idx):
+    contacts = get_contacts_wlg()
+    if 0 <= idx < len(contacts):
+        contacts.pop(idx)
+        write_sheet('contacts_wlg', contacts)
 
 
 # CRUD PARAMÈTRES

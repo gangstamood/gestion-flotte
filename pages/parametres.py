@@ -8,14 +8,14 @@ from database import (
     add_category_scooter, delete_category_scooter,
     add_category_golfette, delete_category_golfette,
     add_lien, delete_lien,
-    set_parametre
+    add_contact_wlg, delete_contact_wlg
 )
 
 
 esc = html.escape
 
 
-def render_parametres(t, categories, services, categories_engins, categories_scooters, categories_golfettes, liens, parametres=None):
+def render_parametres(t, categories, services, categories_engins, categories_scooters, categories_golfettes, liens, parametres=None, contacts_wlg=None):
     st.markdown("# ⚙️ Paramètres")
     st.markdown("<p class='page-intro'>Configurer l'application</p>", unsafe_allow_html=True)
 
@@ -119,20 +119,66 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
                 st.rerun()
 
     st.markdown("---")
-    st.markdown("### 🔨 Contact Interventions WLG")
-    st.markdown("<p class='page-intro'>Ces informations sont pré-remplies automatiquement dans le formulaire de déclaration d'intervention.</p>", unsafe_allow_html=True)
-    p = parametres or {}
-    col_c1, col_c2 = st.columns(2)
-    cur_tel = p.get('contact_telephone', '')
-    cur_hor = p.get('contact_horaires', '')
-    new_tel = col_c1.text_input("📞 N° à appeler", value=cur_tel, placeholder="06 XX XX XX XX")
-    new_hor = col_c2.text_input("🕐 Horaires", value=cur_hor, placeholder="8h-12h / 14h-17h")
-    if st.button("💾 Enregistrer le contact", type="primary"):
-        set_parametre('contact_telephone', new_tel.strip())
-        set_parametre('contact_horaires', new_hor.strip())
-        st.success("✅ Contact enregistré")
-        st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
-        st.rerun()
+    st.markdown("### 🔨 Fiches Contact Interventions WLG")
+    st.markdown("<p class='page-intro'>Ces fiches s'affichent en haut de la page Interventions WLG.</p>", unsafe_allow_html=True)
+
+    all_contacts = contacts_wlg or []
+    contacts_engins = [(i, c) for i, c in enumerate(all_contacts) if c.get('categorie') == 'engins']
+    contacts_golfettes = [(i, c) for i, c in enumerate(all_contacts) if c.get('categorie') == 'golfettes']
+
+    col_ce, col_cg = st.columns(2)
+
+    with col_ce:
+        st.markdown("#### 🚜 Contacts Engins")
+        for idx, c in contacts_engins:
+            c1, c2 = st.columns([5, 1])
+            c1.markdown(
+                f"<div style='background:{t['input_bg']};border:1px solid {t['card_border']};"
+                f"border-radius:8px;padding:0.6rem 0.9rem;margin-bottom:0.4rem;'>"
+                f"<span style='color:{t['h23_color']};font-weight:700;'>{esc(c.get('nom',''))}</span><br>"
+                f"<span style='color:{t['intro_color']};font-size:0.82rem;'>📞 {esc(c.get('telephone',''))} &nbsp;·&nbsp; 🕐 {esc(c.get('horaires',''))}</span>"
+                f"</div>", unsafe_allow_html=True)
+            if c2.button("🗑️", key=f"del_ce_{idx}"):
+                delete_contact_wlg(idx)
+                st.rerun()
+        with st.form(f"form_add_contact_eng_{st.session_state.get('_fk',0)}"):
+            n1 = st.text_input("Nom / Poste *", placeholder="Ex : Mécanicien WLG", key="ce_nom")
+            cc1, cc2 = st.columns(2)
+            t1 = cc1.text_input("📞 Téléphone *", placeholder="06 XX XX XX XX", key="ce_tel")
+            h1 = cc2.text_input("🕐 Horaires", placeholder="8h-12h / 14h-17h", key="ce_hor")
+            if st.form_submit_button("➕ Ajouter", type="primary"):
+                if n1.strip() and t1.strip():
+                    add_contact_wlg('engins', n1.strip(), t1.strip(), h1.strip())
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
+                    st.rerun()
+                else:
+                    st.error("❌ Nom et téléphone requis")
+
+    with col_cg:
+        st.markdown("#### ⛳ Contacts Golfettes")
+        for idx, c in contacts_golfettes:
+            c1, c2 = st.columns([5, 1])
+            c1.markdown(
+                f"<div style='background:{t['input_bg']};border:1px solid {t['card_border']};"
+                f"border-radius:8px;padding:0.6rem 0.9rem;margin-bottom:0.4rem;'>"
+                f"<span style='color:{t['h23_color']};font-weight:700;'>{esc(c.get('nom',''))}</span><br>"
+                f"<span style='color:{t['intro_color']};font-size:0.82rem;'>📞 {esc(c.get('telephone',''))} &nbsp;·&nbsp; 🕐 {esc(c.get('horaires',''))}</span>"
+                f"</div>", unsafe_allow_html=True)
+            if c2.button("🗑️", key=f"del_cg_{idx}"):
+                delete_contact_wlg(idx)
+                st.rerun()
+        with st.form(f"form_add_contact_golf_{st.session_state.get('_fk',0)}"):
+            n2 = st.text_input("Nom / Poste *", placeholder="Ex : Technicien golfettes", key="cg_nom")
+            cc3, cc4 = st.columns(2)
+            t2 = cc3.text_input("📞 Téléphone *", placeholder="06 XX XX XX XX", key="cg_tel")
+            h2 = cc4.text_input("🕐 Horaires", placeholder="8h-12h / 14h-17h", key="cg_hor")
+            if st.form_submit_button("➕ Ajouter", type="primary"):
+                if n2.strip() and t2.strip():
+                    add_contact_wlg('golfettes', n2.strip(), t2.strip(), h2.strip())
+                    st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
+                    st.rerun()
+                else:
+                    st.error("❌ Nom et téléphone requis")
 
     st.markdown("---")
     st.markdown("### 📎 Liens Tableaux Excel")
