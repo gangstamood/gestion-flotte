@@ -70,7 +70,7 @@ def write_sheet(sheet_name, data):
     if not data:
         _load_all_sheets.clear()
         return
-    headers = list(data[0].keys())
+    headers = list(dict.fromkeys(k for row in data for k in row.keys()))
     values = [headers] + [[row.get(h, '') for h in headers] for row in data]
     sheets_service.spreadsheets().values().update(
         spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A1",
