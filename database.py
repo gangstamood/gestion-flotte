@@ -1,5 +1,8 @@
 import streamlit as st
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+_TZ = ZoneInfo('Europe/Paris')
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -136,7 +139,7 @@ def retourner_vehicule(immat):
     attributions = get_attributions()
     for attr in reversed(attributions):
         if attr.get('immatriculation') == immat and not attr.get('retourne'):
-            attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+            attr['retourne'] = datetime.now(_TZ).strftime("%d/%m/%Y %H:%M")
             break
     write_sheet('attributions', attributions)
 
@@ -266,7 +269,7 @@ def _is_engin_active_today(attr):
     if attr.get('retourne'):
         return False
     try:
-        today = datetime.now().date()
+        today = datetime.now(_TZ).date()
         date_debut = datetime.strptime(attr['date'], "%d/%m/%Y").date()
         date_fin = datetime.strptime(attr.get('date_fin', attr['date']), "%d/%m/%Y").date()
         return date_debut <= today <= date_fin
@@ -282,7 +285,7 @@ def retourner_engin(num_serie):
     attributions = get_attributions_engins()
     for attr in reversed(attributions):
         if attr.get('numero_serie') == num_serie and not attr.get('retourne'):
-            attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+            attr['retourne'] = datetime.now(_TZ).strftime("%d/%m/%Y %H:%M")
             break
     write_sheet('attributions_engins', attributions)
 
@@ -349,7 +352,7 @@ def retourner_scooter(immat):
     attributions = get_attributions_scooters()
     for attr in reversed(attributions):
         if attr.get('immatriculation') == immat and not attr.get('retourne'):
-            attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+            attr['retourne'] = datetime.now(_TZ).strftime("%d/%m/%Y %H:%M")
             break
     write_sheet('attributions_scooters', attributions)
 
@@ -401,7 +404,7 @@ _RETOUR_COL = {
 }
 
 def add_distribution_clef(categorie, identifiant, nom, commentaire):
-    now = datetime.now()
+    now = datetime.now(_TZ)
     ext_sheet, ext_row = _write_distrib_externe(categorie, identifiant, nom, commentaire, now)
     entry = {
         'date': now.strftime("%d/%m/%Y"),
@@ -421,7 +424,7 @@ def add_distribution_clef(categorie, identifiant, nom, commentaire):
 def retour_clef(idx):
     clefs = get_distribution_clefs()
     if 0 <= idx < len(clefs):
-        clefs[idx]['retour_clef'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+        clefs[idx]['retour_clef'] = datetime.now(_TZ).strftime("%d/%m/%Y %H:%M")
         write_sheet('distribution_clefs', clefs)
         _cocher_retour_externe(clefs[idx])
 
@@ -495,7 +498,7 @@ def retourner_golfette(num_serie):
     attributions = get_attributions_golfettes()
     for attr in reversed(attributions):
         if attr.get('numero_serie') == num_serie and not attr.get('retourne'):
-            attr['retourne'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+            attr['retourne'] = datetime.now(_TZ).strftime("%d/%m/%Y %H:%M")
             break
     write_sheet('attributions_golfettes', attributions)
 
