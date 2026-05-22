@@ -51,7 +51,10 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
                 date_i = col3.date_input("Date *", value=datetime.now())
                 heure_i = col4.time_input("Heure *", value=datetime.now().time())
                 comm = st.text_area("Description *", height=90, placeholder="Décrivez le problème ou l'intervention…")
-                statut = st.selectbox("Statut", STATUTS)
+                col5, col6, col7 = st.columns(3)
+                statut = col5.selectbox("Statut", STATUTS)
+                telephone = col6.text_input("📞 N° à appeler", placeholder="06 XX XX XX XX")
+                horaires = col7.text_input("🕐 Horaires", placeholder="8h-12h / 14h-17h")
                 if st.form_submit_button("✅ Enregistrer", type="primary"):
                     if comm.strip():
                         num = eng_sel.split(" — ")[0]
@@ -59,7 +62,8 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
                             num, type_i,
                             date_i.strftime("%d/%m/%Y"),
                             heure_i.strftime("%H:%M"),
-                            comm.strip(), statut
+                            comm.strip(), statut,
+                            telephone.strip(), horaires.strip()
                         )
                         st.success(f"✅ Intervention enregistrée pour {num}")
                         st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
@@ -88,7 +92,10 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
                 comm = st.text_area("Description *", height=90,
                                     placeholder="Décrivez le problème ou l'intervention…",
                                     key="golf_comm")
-                statut = st.selectbox("Statut", STATUTS, key="golf_statut")
+                col5g, col6g, col7g = st.columns(3)
+                statut = col5g.selectbox("Statut", STATUTS, key="golf_statut")
+                telephone = col6g.text_input("📞 N° à appeler", placeholder="06 XX XX XX XX", key="golf_tel")
+                horaires = col7g.text_input("🕐 Horaires", placeholder="8h-12h / 14h-17h", key="golf_hor")
                 if st.form_submit_button("✅ Enregistrer", type="primary"):
                     if comm.strip():
                         num = golf_sel.split(" — ")[0]
@@ -96,7 +103,8 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
                             num, type_i,
                             date_i.strftime("%d/%m/%Y"),
                             heure_i.strftime("%H:%M"),
-                            comm.strip(), statut
+                            comm.strip(), statut,
+                            telephone.strip(), horaires.strip()
                         )
                         st.success(f"✅ Intervention enregistrée pour {num}")
                         st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
@@ -136,6 +144,20 @@ def _render_card(t, i, id_key):
     statut = i.get('statut', '')
     color = '#ef4444' if statut == 'En cours' else '#10b981' if statut == 'Terminée' else '#f59e0b'
     emoji = '🔴' if statut == 'En cours' else '✅' if statut == 'Terminée' else '⏸️'
+    telephone = i.get('telephone', '') or ''
+    horaires = i.get('horaires', '') or ''
+    contact_line = ''
+    if telephone or horaires:
+        parts = []
+        if telephone:
+            parts.append(f"📞 <b>{esc(telephone)}</b>")
+        if horaires:
+            parts.append(f"🕐 {esc(horaires)}")
+        contact_line = (
+            f"<br><span style='color:{t['intro_color']};font-size:0.82rem;'>"
+            + " &nbsp;·&nbsp; ".join(parts)
+            + "</span>"
+        )
     st.markdown(
         f"<div style='background:{t['card_bg']};border:1px solid {t['card_border']};"
         f"border-left:4px solid {color};border-radius:10px;"
@@ -146,6 +168,7 @@ def _render_card(t, i, id_key):
         f"📅 {esc(i.get('date',''))} {esc(i.get('heure',''))}</span>"
         f"<span style='color:{color};margin-left:0.8rem;font-size:0.82rem;'>{emoji} {esc(statut)}</span><br>"
         f"<span style='color:{t['text_color']};font-size:0.85rem;'>💬 {esc(i.get('commentaire',''))}</span>"
+        f"{contact_line}"
         f"</div>",
         unsafe_allow_html=True,
     )

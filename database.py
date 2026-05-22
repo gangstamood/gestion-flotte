@@ -317,9 +317,9 @@ def delete_category_engin(nom):
 def get_interventions_engins():
     return read_sheet('interventions_engins')
 
-def add_intervention_engin(num_serie, type_i, date, heure, comm, statut):
+def add_intervention_engin(num_serie, type_i, date, heure, comm, statut, telephone="", horaires=""):
     interventions = get_interventions_engins()
-    interventions.append({'numero_serie': num_serie, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut})
+    interventions.append({'numero_serie': num_serie, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut, 'telephone': telephone, 'horaires': horaires})
     write_sheet('interventions_engins', interventions)
 
 
@@ -530,9 +530,9 @@ def delete_category_golfette(nom):
 def get_interventions_golfettes():
     return read_sheet('interventions_golfettes')
 
-def add_intervention_golfette(num_serie, type_i, date, heure, comm, statut):
+def add_intervention_golfette(num_serie, type_i, date, heure, comm, statut, telephone="", horaires=""):
     interventions = get_interventions_golfettes()
-    interventions.append({'numero_serie': num_serie, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut})
+    interventions.append({'numero_serie': num_serie, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut, 'telephone': telephone, 'horaires': horaires})
     write_sheet('interventions_golfettes', interventions)
 
 
