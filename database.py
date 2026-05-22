@@ -23,7 +23,7 @@ ALL_SHEET_NAMES = [
     'interventions_engins', 'scooters', 'attributions_scooters',
     'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules',
     'distribution_clefs', 'golfettes', 'attributions_golfettes',
-    'categories_golfettes', 'interventions_golfettes'
+    'categories_golfettes', 'interventions_golfettes', 'parametres'
 ]
 
 DISTRIB_EXT_ID = "1lHvCjEL-KZ0llBPKiZrWocOcHlcAoQkW5d72KShi1GY"
@@ -84,7 +84,7 @@ def init_database():
     try:
         sheet_metadata = sheets_service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
         existing_sheets = [s['properties']['title'] for s in sheet_metadata['sheets']]
-        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules', 'distribution_clefs', 'golfettes', 'attributions_golfettes', 'categories_golfettes', 'interventions_golfettes']
+        required_sheets = ['vehicules', 'attributions', 'categories', 'services', 'interventions', 'carburant', 'engins', 'attributions_engins', 'categories_engins', 'interventions_engins', 'scooters', 'attributions_scooters', 'categories_scooters', 'interventions_scooters', 'liens', 'fiches_vehicules', 'distribution_clefs', 'golfettes', 'attributions_golfettes', 'categories_golfettes', 'interventions_golfettes', 'parametres']
         for sheet_name in required_sheets:
             if sheet_name not in existing_sheets:
                 sheets_service.spreadsheets().batchUpdate(
@@ -556,3 +556,21 @@ def _cocher_retour_externe(entry):
         pass
     except Exception:
         pass
+
+
+# CRUD PARAMÈTRES
+def get_parametres():
+    """Retourne un dict {cle: valeur} depuis la feuille parametres."""
+    rows = read_sheet('parametres')
+    return {r['cle']: r.get('valeur', '') for r in rows if r.get('cle')}
+
+def set_parametre(cle, valeur):
+    """Crée ou met à jour une entrée dans la feuille parametres."""
+    rows = read_sheet('parametres')
+    for r in rows:
+        if r.get('cle') == cle:
+            r['valeur'] = valeur
+            write_sheet('parametres', rows)
+            return
+    rows.append({'cle': cle, 'valeur': valeur})
+    write_sheet('parametres', rows)

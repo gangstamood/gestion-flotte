@@ -16,10 +16,14 @@ def _is_wlg(num):
     return bool(re.match(r'^[CTN]\d+$', str(num)))
 
 
-def render_interventions_wlg(t, engins, golfettes, interventions_engins, interventions_golfettes):
+def render_interventions_wlg(t, engins, golfettes, interventions_engins, interventions_golfettes, parametres=None):
     st.markdown("# 🔨 Interventions WLG26")
     st.markdown("<p class='page-intro'>Déclarer et suivre les interventions sur engins et golfettes</p>",
                 unsafe_allow_html=True)
+
+    p = parametres or {}
+    default_tel = p.get('contact_telephone', '')
+    default_hor = p.get('contact_horaires', '')
 
     wlg_engins = [e for e in engins if _is_wlg(e.get('numero_serie', ''))]
     wlg_interv_engins = [i for i in interventions_engins if _is_wlg(i.get('numero_serie', ''))]
@@ -53,8 +57,8 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
                 comm = st.text_area("Description *", height=90, placeholder="Décrivez le problème ou l'intervention…")
                 col5, col6, col7 = st.columns(3)
                 statut = col5.selectbox("Statut", STATUTS)
-                telephone = col6.text_input("📞 N° à appeler", placeholder="06 XX XX XX XX")
-                horaires = col7.text_input("🕐 Horaires", placeholder="8h-12h / 14h-17h")
+                telephone = col6.text_input("📞 N° à appeler", value=default_tel, placeholder="06 XX XX XX XX")
+                horaires = col7.text_input("🕐 Horaires", value=default_hor, placeholder="8h-12h / 14h-17h")
                 if st.form_submit_button("✅ Enregistrer", type="primary"):
                     if comm.strip():
                         num = eng_sel.split(" — ")[0]
@@ -94,8 +98,8 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
                                     key="golf_comm")
                 col5g, col6g, col7g = st.columns(3)
                 statut = col5g.selectbox("Statut", STATUTS, key="golf_statut")
-                telephone = col6g.text_input("📞 N° à appeler", placeholder="06 XX XX XX XX", key="golf_tel")
-                horaires = col7g.text_input("🕐 Horaires", placeholder="8h-12h / 14h-17h", key="golf_hor")
+                telephone = col6g.text_input("📞 N° à appeler", value=default_tel, placeholder="06 XX XX XX XX", key="golf_tel")
+                horaires = col7g.text_input("🕐 Horaires", value=default_hor, placeholder="8h-12h / 14h-17h", key="golf_hor")
                 if st.form_submit_button("✅ Enregistrer", type="primary"):
                     if comm.strip():
                         num = golf_sel.split(" — ")[0]

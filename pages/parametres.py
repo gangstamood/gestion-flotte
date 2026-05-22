@@ -7,14 +7,15 @@ from database import (
     add_category_engin, delete_category_engin,
     add_category_scooter, delete_category_scooter,
     add_category_golfette, delete_category_golfette,
-    add_lien, delete_lien
+    add_lien, delete_lien,
+    set_parametre
 )
 
 
 esc = html.escape
 
 
-def render_parametres(t, categories, services, categories_engins, categories_scooters, categories_golfettes, liens):
+def render_parametres(t, categories, services, categories_engins, categories_scooters, categories_golfettes, liens, parametres=None):
     st.markdown("# ⚙️ Paramètres")
     st.markdown("<p class='page-intro'>Configurer l'application</p>", unsafe_allow_html=True)
 
@@ -116,6 +117,22 @@ def render_parametres(t, categories, services, categories_engins, categories_sco
                 add_category_golfette(nv_cat_golf)
                 st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                 st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 🔨 Contact Interventions WLG")
+    st.markdown("<p class='page-intro'>Ces informations sont pré-remplies automatiquement dans le formulaire de déclaration d'intervention.</p>", unsafe_allow_html=True)
+    p = parametres or {}
+    col_c1, col_c2 = st.columns(2)
+    cur_tel = p.get('contact_telephone', '')
+    cur_hor = p.get('contact_horaires', '')
+    new_tel = col_c1.text_input("📞 N° à appeler", value=cur_tel, placeholder="06 XX XX XX XX")
+    new_hor = col_c2.text_input("🕐 Horaires", value=cur_hor, placeholder="8h-12h / 14h-17h")
+    if st.button("💾 Enregistrer le contact", type="primary"):
+        set_parametre('contact_telephone', new_tel.strip())
+        set_parametre('contact_horaires', new_hor.strip())
+        st.success("✅ Contact enregistré")
+        st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
+        st.rerun()
 
     st.markdown("---")
     st.markdown("### 📎 Liens Tableaux Excel")
