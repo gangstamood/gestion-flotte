@@ -33,7 +33,11 @@ check_password(t)
 init_database()
 
 # CHARGEMENT DONNÉES (1 seul appel API batchGet)
-_all = _load_all_sheets()
+try:
+    _all = _load_all_sheets()
+except Exception as _e:
+    st.error(f"Erreur de connexion à Google Sheets — rechargez la page dans quelques secondes. ({_e})")
+    st.stop()
 vehicules = _all.get('vehicules', [])
 attributions = _all.get('attributions', [])
 _cats = _all.get('categories', [])

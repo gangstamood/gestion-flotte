@@ -35,51 +35,60 @@ DISTRIB_EXT_ID = "1lHvCjEL-KZ0llBPKiZrWocOcHlcAoQkW5d72KShi1GY"
 @st.cache_data(ttl=60, show_spinner="Chargement des données...")
 def _load_all_sheets():
     ranges = [f"{name}!A:Z" for name in ALL_SHEET_NAMES]
-    try:
-        result = sheets_service.spreadsheets().values().batchGet(
-            spreadsheetId=SPREADSHEET_ID, ranges=ranges
-        ).execute()
-        data = {}
-        for i, vr in enumerate(result.get('valueRanges', [])):
-            values = vr.get('values', [])
-            if not values or len(values) < 2:
-                data[ALL_SHEET_NAMES[i]] = []
-            else:
-                headers = values[0]
-                data[ALL_SHEET_NAMES[i]] = [dict(zip(headers, row + [''] * (len(headers) - len(row)))) for row in values[1:]]
-        return data
-    except Exception:
-        return {name: [] for name in ALL_SHEET_NAMES}
+    # Ne pas attraper les exceptions ici : si l'API échoue, Streamlit ne mettra
+    # pas le résultat vide en cache et réessaiera à la prochaine interaction.
+    result = sheets_service.spreadsheets().values().batchGet(
+        spreadsheetId=SPREADSHEET_ID, ranges=ranges
+    ).execute()
+    data = {}
+    for i, vr in enumerate(result.get('valueRanges', [])):
+        values = vr.get('values', [])
+        if not values or len(values) < 2:
+            data[ALL_SHEET_NAMES[i]] = []
+        else:
+            headers = values[0]
+            data[ALL_SHEET_NAMES[i]] = [dict(zip(headers, row + [''] * (len(headers) - len(row)))) for row in values[1:]]
+    return data
 
 
 def read_sheet(sheet_name):
-    try:
-        result = sheets_service.spreadsheets().values().get(
-            spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A:Z"
-        ).execute()
-        values = result.get('values', [])
-        if not values or len(values) < 2:
-            return []
-        headers = values[0]
-        return [dict(zip(headers, row + [''] * (len(headers) - len(row)))) for row in values[1:]]
-    except Exception:
+    result = sheets_service.spreadsheets().values().get(
+        spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A:Z"
+    ).execute()
+    values = result.get('values', [])
+    if not values or len(values) < 2:
         return []
+    headers = values[0]
+    return [dict(zip(headers, row + [''] * (len(headers) - len(row)))) for row in values[1:]]
 
 
 def write_sheet(sheet_name, data):
-    sheets_service.spreadsheets().values().clear(
-        spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A:Z"
-    ).execute()
-    if not data:
+    # Écrire les données AVANT de supprimer les anciennes lignes (ordre inverse).
+    # Cela évite la perte de données si le process crash entre clear() et update().
+    try:
+        if not data:
+            sheets_service.spreadsheets().values().clear(
+                spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A:Z"
+            ).execute()
+        else:
+            headers = list(dict.fromkeys(k for row in data for k in row.keys()))
+            values = [headers] + [[row.get(h, '') for h in headers] for row in data]
+            # 1. Écrire depuis A1 (données valides immédiatement)
+            sheets_service.spreadsheets().values().update(
+                spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A1",
+                valueInputOption="RAW", body={"values": values}
+            ).execute()
+            # 2. Supprimer les lignes résiduelles en dessous (best-effort)
+            clear_from = len(values) + 1
+            try:
+                sheets_service.spreadsheets().values().clear(
+                    spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A{clear_from}:Z10000"
+                ).execute()
+            except Exception:
+                pass
+    finally:
+        # Toujours invalider le cache, même en cas d'erreur partielle
         _load_all_sheets.clear()
-        return
-    headers = list(dict.fromkeys(k for row in data for k in row.keys()))
-    values = [headers] + [[row.get(h, '') for h in headers] for row in data]
-    sheets_service.spreadsheets().values().update(
-        spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A1",
-        valueInputOption="RAW", body={"values": values}
-    ).execute()
-    _load_all_sheets.clear()
 
 
 @st.cache_resource
