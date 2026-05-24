@@ -76,8 +76,11 @@ def write_sheet(sheet_name, data, prev_size=None):
     """
     try:
         if not data:
+            # Préserver la ligne d'en-tête : on n'efface que les lignes de données.
+            # Sans ça, un write_sheet(..., []) déclenché par un cache vide
+            # (erreur API transitoire) wipait toute la feuille, y compris l'en-tête.
             sheets_service.spreadsheets().values().clear(
-                spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A:Z"
+                spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A2:Z10000"
             ).execute()
             return
         headers = list(dict.fromkeys(k for row in data for k in row.keys()))
@@ -103,25 +106,46 @@ def append_row(sheet_name, row_dict):
     """Ajoute UNE ligne via l'API append (1 seul appel, beaucoup plus rapide
     qu'un read+rewrite complet). On infère les en-têtes depuis la 1re ligne
     existante pour préserver l'ordre des colonnes.
+
+    Si la feuille est vraiment vide (pas d'en-tête), on écrit [en-tête, ligne]
+    via update — sinon la 1re ligne devient une ligne de données et toutes
+    les lectures suivantes échouent (dict(zip(headers, row)) avec headers={}).
     """
     try:
         existing = _load_all_sheets().get(sheet_name, [])
         if existing:
-            headers = list(dict.fromkeys(k for r in existing for k in r.keys()))
-            # Ajouter les nouvelles clés à la fin si besoin
+            header_row = list(dict.fromkeys(k for r in existing for k in r.keys()))
+        else:
+            # Cache vide : vérifier directement la ligne 1 pour distinguer
+            # "feuille avec en-tête seule" de "feuille vide".
+            result = sheets_service.spreadsheets().values().get(
+                spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!1:1"
+            ).execute()
+            raw = result.get('values') or []
+            header_row = raw[0] if raw and raw[0] else []
+
+        if header_row:
+            headers = list(header_row)
             for k in row_dict:
                 if k not in headers:
                     headers.append(k)
+            row_values = [row_dict.get(h, '') for h in headers]
+            sheets_service.spreadsheets().values().append(
+                spreadsheetId=SPREADSHEET_ID,
+                range=f"{sheet_name}!A:Z",
+                valueInputOption="RAW",
+                insertDataOption="INSERT_ROWS",
+                body={"values": [row_values]}
+            ).execute()
         else:
             headers = list(row_dict.keys())
-        row_values = [row_dict.get(h, '') for h in headers]
-        sheets_service.spreadsheets().values().append(
-            spreadsheetId=SPREADSHEET_ID,
-            range=f"{sheet_name}!A:Z",
-            valueInputOption="RAW",
-            insertDataOption="INSERT_ROWS",
-            body={"values": [row_values]}
-        ).execute()
+            row_values = [row_dict.get(h, '') for h in headers]
+            sheets_service.spreadsheets().values().update(
+                spreadsheetId=SPREADSHEET_ID,
+                range=f"{sheet_name}!A1",
+                valueInputOption="RAW",
+                body={"values": [headers, row_values]}
+            ).execute()
     finally:
         _load_all_sheets.clear()
 
