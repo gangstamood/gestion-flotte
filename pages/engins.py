@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from database import (
     add_engin, delete_engin, update_engin_prestataire,
     add_attribution_engin, update_attribution_engin, delete_attribution_engin,
-    _is_engin_active_today, add_intervention_engin, update_intervention_engin_statut,
+    _is_engin_active_today, add_intervention_engin, update_intervention_engin,
     retourner_engin
 )
 from alertes import verifier_alertes_engins
@@ -417,17 +417,33 @@ def _page_interventions(t, engins, interventions_engins):
             statut = interv.get('statut', '')
             emoji = "🔴" if statut == "En cours" else "✅" if statut == "Terminée" else "⏸️"
             with st.expander(f"{emoji} {interv.get('numero_serie', '')} - {interv.get('type', '')} - {interv.get('date', '')}"):
-                st.write(f"**Type:** {interv.get('type', '')}")
-                st.info(interv.get('commentaire', ''))
-                cur_idx = STATUTS_INTERV.index(statut) if statut in STATUTS_INTERV else 0
-                new_statut = st.selectbox(
-                    "Statut",
-                    STATUTS_INTERV,
-                    index=cur_idx,
-                    key=f"statut_eng_{idx}",
-                )
-                if new_statut != statut:
-                    update_intervention_engin_statut(idx, new_statut)
-                    st.rerun()
+                st.markdown(f"**Type :** {interv.get('type', '')}")
+                st.markdown("**📝 Description initiale**")
+                st.info(interv.get('commentaire', '') or "—")
+                bon_url_cur = interv.get('bon_url', '')
+                if bon_url_cur:
+                    st.markdown(f"📎 [Bon d'intervention actuel]({bon_url_cur})")
+                with st.form(f"edit_interv_eng_{idx}"):
+                    cur_idx = STATUTS_INTERV.index(statut) if statut in STATUTS_INTERV else 0
+                    new_statut = st.selectbox("Statut", STATUTS_INTERV, index=cur_idx)
+                    note = st.text_area(
+                        "📝 Note de clôture",
+                        value=interv.get('note_cloture', ''),
+                        placeholder="Ce qui a été fait, pièces remplacées, observations…",
+                        height=90,
+                    )
+                    bon_url = st.text_input(
+                        "🔗 Lien du bon d'intervention",
+                        value=bon_url_cur,
+                        placeholder="https://drive.google.com/…",
+                    )
+                    if st.form_submit_button("💾 Enregistrer", type="primary"):
+                        update_intervention_engin(idx, {
+                            'statut': new_statut,
+                            'note_cloture': note.strip(),
+                            'bon_url': bon_url.strip(),
+                        })
+                        st.success("✅ Mis à jour")
+                        st.rerun()
     else:
         st.info("Aucune intervention enregistrée")

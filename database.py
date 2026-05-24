@@ -389,10 +389,11 @@ def get_interventions_engins():
 def add_intervention_engin(num_serie, type_i, date, heure, comm, statut, telephone="", horaires=""):
     append_row('interventions_engins', {'numero_serie': num_serie, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut, 'telephone': telephone, 'horaires': horaires})
 
-def update_intervention_engin_statut(idx, new_statut):
+def update_intervention_engin(idx, data):
+    """Met à jour les champs d'une intervention (statut, note_cloture, bon_url, etc.)."""
     interventions = _cached('interventions_engins')
     if 0 <= idx < len(interventions):
-        interventions[idx]['statut'] = new_statut
+        interventions[idx].update(data)
         write_sheet('interventions_engins', interventions, prev_size=len(interventions))
 
 
@@ -585,10 +586,11 @@ def get_interventions_golfettes():
 def add_intervention_golfette(num_serie, type_i, date, heure, comm, statut, telephone="", horaires=""):
     append_row('interventions_golfettes', {'numero_serie': num_serie, 'type': type_i, 'date': date, 'heure': heure, 'commentaire': comm, 'statut': statut, 'telephone': telephone, 'horaires': horaires})
 
-def update_intervention_golfette_statut(idx, new_statut):
+def update_intervention_golfette(idx, data):
+    """Met à jour les champs d'une intervention (statut, note_cloture, bon_url, etc.)."""
     interventions = _cached('interventions_golfettes')
     if 0 <= idx < len(interventions):
-        interventions[idx]['statut'] = new_statut
+        interventions[idx].update(data)
         write_sheet('interventions_golfettes', interventions, prev_size=len(interventions))
 
 

@@ -4,7 +4,7 @@ import streamlit as st
 from datetime import datetime
 from database import (
     add_intervention_engin, add_intervention_golfette,
-    update_intervention_engin_statut, update_intervention_golfette_statut,
+    update_intervention_engin, update_intervention_golfette,
 )
 
 esc = html.escape
@@ -201,6 +201,19 @@ def _render_card(t, idx, i, id_key, kind):
             + " &nbsp;·&nbsp; ".join(parts)
             + "</span>"
         )
+    note_cloture_cur = i.get('note_cloture', '') or ''
+    bon_url_cur = i.get('bon_url', '') or ''
+    extra_lines = ''
+    if note_cloture_cur:
+        extra_lines += (
+            f"<br><span style='color:{t['text_color']};font-size:0.85rem;'>"
+            f"✅ <b>Clôture :</b> {esc(note_cloture_cur)}</span>"
+        )
+    if bon_url_cur:
+        extra_lines += (
+            f"<br><span style='font-size:0.85rem;'>"
+            f"📎 <a href='{esc(bon_url_cur)}' target='_blank' style='color:#3b82f6;'>Bon d'intervention</a></span>"
+        )
     st.markdown(
         f"<div style='background:{t['card_bg']};border:1px solid {t['card_border']};"
         f"border-left:4px solid {color};border-radius:10px;"
@@ -212,21 +225,33 @@ def _render_card(t, idx, i, id_key, kind):
         f"<span style='color:{color};margin-left:0.8rem;font-size:0.82rem;'>{emoji} {esc(statut)}</span><br>"
         f"<span style='color:{t['text_color']};font-size:0.85rem;'>💬 {esc(i.get('commentaire',''))}</span>"
         f"{contact_line}"
+        f"{extra_lines}"
         f"</div>",
         unsafe_allow_html=True,
     )
-    cur_idx = STATUTS.index(statut) if statut in STATUTS else 0
-    col_sel, _ = st.columns([1, 3])
-    new_statut = col_sel.selectbox(
-        "Statut",
-        STATUTS,
-        index=cur_idx,
-        key=f"statut_{kind}_{idx}",
-        label_visibility="collapsed",
-    )
-    if new_statut != statut:
-        if kind == 'engin':
-            update_intervention_engin_statut(idx, new_statut)
-        else:
-            update_intervention_golfette_statut(idx, new_statut)
-        st.rerun()
+    with st.expander("✏️ Modifier"):
+        with st.form(f"edit_interv_{kind}_{idx}"):
+            cur_idx = STATUTS.index(statut) if statut in STATUTS else 0
+            new_statut = st.selectbox("Statut", STATUTS, index=cur_idx)
+            note = st.text_area(
+                "📝 Note de clôture",
+                value=note_cloture_cur,
+                placeholder="Ce qui a été fait, pièces remplacées, observations…",
+                height=80,
+            )
+            bon_url = st.text_input(
+                "🔗 Lien du bon d'intervention",
+                value=bon_url_cur,
+                placeholder="https://drive.google.com/…",
+            )
+            if st.form_submit_button("💾 Enregistrer", type="primary"):
+                data = {
+                    'statut': new_statut,
+                    'note_cloture': note.strip(),
+                    'bon_url': bon_url.strip(),
+                }
+                if kind == 'engin':
+                    update_intervention_engin(idx, data)
+                else:
+                    update_intervention_golfette(idx, data)
+                st.rerun()
