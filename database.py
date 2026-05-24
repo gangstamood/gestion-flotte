@@ -76,9 +76,13 @@ def write_sheet(sheet_name, data, prev_size=None):
     """
     try:
         if not data:
+            # Safety: si le caller savait qu'il y avait 0 lignes (prev_size=0)
+            # et nous demande d'écrire 0 lignes, c'est un no-op — ne pas wipe.
+            # Évite la perte des données quand le cache renvoie [] par erreur
+            # API transitoire et qu'un delete_X enchaîne avec write_sheet([], 0).
+            if prev_size == 0:
+                return
             # Préserver la ligne d'en-tête : on n'efface que les lignes de données.
-            # Sans ça, un write_sheet(..., []) déclenché par un cache vide
-            # (erreur API transitoire) wipait toute la feuille, y compris l'en-tête.
             sheets_service.spreadsheets().values().clear(
                 spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A2:Z10000"
             ).execute()
