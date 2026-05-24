@@ -4,9 +4,12 @@ from datetime import datetime, timedelta
 from database import (
     add_engin, delete_engin, update_engin_prestataire,
     add_attribution_engin, update_attribution_engin, delete_attribution_engin,
-    _is_engin_active_today, add_intervention_engin, retourner_engin
+    _is_engin_active_today, add_intervention_engin, update_intervention_engin_statut,
+    retourner_engin
 )
 from alertes import verifier_alertes_engins
+
+STATUTS_INTERV = ["En cours", "Terminée", "En attente"]
 
 
 esc = html.escape
@@ -408,11 +411,23 @@ def _page_interventions(t, engins, interventions_engins):
     st.markdown("---")
     st.markdown("### 📋 Historique")
     if interventions_engins:
-        for interv in interventions_engins[:20]:
+        # On garde l'index d'origine (ligne dans la feuille) pour pouvoir update
+        indexed = list(enumerate(interventions_engins))[:20]
+        for idx, interv in indexed:
             statut = interv.get('statut', '')
             emoji = "🔴" if statut == "En cours" else "✅" if statut == "Terminée" else "⏸️"
             with st.expander(f"{emoji} {interv.get('numero_serie', '')} - {interv.get('type', '')} - {interv.get('date', '')}"):
-                st.write(f"**Type:** {interv.get('type', '')} | **Statut:** {statut}")
+                st.write(f"**Type:** {interv.get('type', '')}")
                 st.info(interv.get('commentaire', ''))
+                cur_idx = STATUTS_INTERV.index(statut) if statut in STATUTS_INTERV else 0
+                new_statut = st.selectbox(
+                    "Statut",
+                    STATUTS_INTERV,
+                    index=cur_idx,
+                    key=f"statut_eng_{idx}",
+                )
+                if new_statut != statut:
+                    update_intervention_engin_statut(idx, new_statut)
+                    st.rerun()
     else:
         st.info("Aucune intervention enregistrée")

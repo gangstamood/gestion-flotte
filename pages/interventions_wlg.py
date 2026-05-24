@@ -4,6 +4,7 @@ import streamlit as st
 from datetime import datetime
 from database import (
     add_intervention_engin, add_intervention_golfette,
+    update_intervention_engin_statut, update_intervention_golfette_statut,
 )
 
 esc = html.escape
@@ -60,12 +61,13 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
     default_hor_golf = first_golf.get('horaires', '')
 
     wlg_engins = [e for e in engins if _is_wlg(e.get('numero_serie', ''))]
-    wlg_interv_engins = [i for i in interventions_engins if _is_wlg(i.get('numero_serie', ''))]
-    wlg_interv_golf = list(interventions_golfettes)
+    # On garde l'index d'origine pour pouvoir update le statut (idx = ligne dans la feuille)
+    wlg_interv_engins = [(idx, i) for idx, i in enumerate(interventions_engins) if _is_wlg(i.get('numero_serie', ''))]
+    wlg_interv_golf = list(enumerate(interventions_golfettes))
 
     # Métriques
-    en_cours_e = sum(1 for i in wlg_interv_engins if i.get('statut') == 'En cours')
-    en_cours_g = sum(1 for i in wlg_interv_golf if i.get('statut') == 'En cours')
+    en_cours_e = sum(1 for _, i in wlg_interv_engins if i.get('statut') == 'En cours')
+    en_cours_g = sum(1 for _, i in wlg_interv_golf if i.get('statut') == 'En cours')
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("🚜 Interventions engins", len(wlg_interv_engins))
     c2.metric("⛳ Interventions golfettes", len(wlg_interv_golf))
@@ -114,7 +116,7 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
 
         st.markdown("---")
         st.markdown("### 📋 Historique")
-        _render_liste_interventions(t, wlg_interv_engins, id_key='numero_serie')
+        _render_liste_interventions(t, wlg_interv_engins, id_key='numero_serie', kind='engin')
 
     # ── ONGLET GOLFETTES ──────────────────────────────────────────────────
     with tab_golf:
@@ -156,31 +158,32 @@ def render_interventions_wlg(t, engins, golfettes, interventions_engins, interve
 
         st.markdown("---")
         st.markdown("### 📋 Historique")
-        _render_liste_interventions(t, wlg_interv_golf, id_key='numero_serie')
+        _render_liste_interventions(t, wlg_interv_golf, id_key='numero_serie', kind='golfette')
 
 
-def _render_liste_interventions(t, interventions, id_key):
-    if not interventions:
+def _render_liste_interventions(t, items, id_key, kind):
+    """items: list of (idx, intervention_dict). kind: 'engin' | 'golfette'."""
+    if not items:
         st.info("Aucune intervention enregistrée")
         return
 
-    en_cours = [i for i in interventions if i.get('statut') == 'En cours']
-    autres = [i for i in interventions if i.get('statut') != 'En cours']
+    en_cours = [(idx, i) for idx, i in items if i.get('statut') == 'En cours']
+    autres = [(idx, i) for idx, i in items if i.get('statut') != 'En cours']
 
     if en_cours:
         st.markdown("**🔴 En cours**")
-        for i in en_cours:
-            _render_card(t, i, id_key)
+        for idx, i in en_cours:
+            _render_card(t, idx, i, id_key, kind)
         if autres:
             st.markdown("---")
 
     if autres:
         with st.expander(f"📋 Terminées / En attente ({len(autres)})"):
-            for i in reversed(autres):
-                _render_card(t, i, id_key)
+            for idx, i in reversed(autres):
+                _render_card(t, idx, i, id_key, kind)
 
 
-def _render_card(t, i, id_key):
+def _render_card(t, idx, i, id_key, kind):
     statut = i.get('statut', '')
     color = '#ef4444' if statut == 'En cours' else '#10b981' if statut == 'Terminée' else '#f59e0b'
     emoji = '🔴' if statut == 'En cours' else '✅' if statut == 'Terminée' else '⏸️'
@@ -201,7 +204,7 @@ def _render_card(t, i, id_key):
     st.markdown(
         f"<div style='background:{t['card_bg']};border:1px solid {t['card_border']};"
         f"border-left:4px solid {color};border-radius:10px;"
-        f"padding:0.75rem 1.2rem;margin-bottom:0.5rem;'>"
+        f"padding:0.75rem 1.2rem;margin-bottom:0.25rem;'>"
         f"<span style='color:{t['h1_color']};font-weight:700;'>{esc(i.get(id_key,''))}</span>"
         f"<span style='color:{t['label_color']};margin-left:0.8rem;'>{esc(i.get('type',''))}</span>"
         f"<span style='color:{t['intro_color']};margin-left:0.8rem;font-size:0.82rem;'>"
@@ -212,3 +215,18 @@ def _render_card(t, i, id_key):
         f"</div>",
         unsafe_allow_html=True,
     )
+    cur_idx = STATUTS.index(statut) if statut in STATUTS else 0
+    col_sel, _ = st.columns([1, 3])
+    new_statut = col_sel.selectbox(
+        "Statut",
+        STATUTS,
+        index=cur_idx,
+        key=f"statut_{kind}_{idx}",
+        label_visibility="collapsed",
+    )
+    if new_statut != statut:
+        if kind == 'engin':
+            update_intervention_engin_statut(idx, new_statut)
+        else:
+            update_intervention_golfette_statut(idx, new_statut)
+        st.rerun()
