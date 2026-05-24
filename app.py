@@ -66,10 +66,10 @@ if 'dashboard_detail' not in st.session_state:
     st.session_state.dashboard_detail = None
 if 'eng_sem_offset' not in st.session_state:
     st.session_state.eng_sem_offset = 0
-if 'wlg_sem_offset' not in st.session_state:
-    st.session_state.wlg_sem_offset = 0
-if 'wlg_golf_sem_offset' not in st.session_state:
-    st.session_state.wlg_golf_sem_offset = 0
+if 'wlg_jour_offset' not in st.session_state:
+    st.session_state.wlg_jour_offset = 0
+if 'wlg_golf_jour_offset' not in st.session_state:
+    st.session_state.wlg_golf_jour_offset = 0
 if 'golf_sem_offset' not in st.session_state:
     st.session_state.golf_sem_offset = 0
 if '_fk' not in st.session_state:

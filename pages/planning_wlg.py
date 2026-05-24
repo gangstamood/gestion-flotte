@@ -268,24 +268,35 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
     st.markdown("---")
     st.markdown("### 📅 Planning semaine")
 
-    if 'wlg_sem_offset' not in st.session_state:
-        st.session_state['wlg_sem_offset'] = 0
+    if 'wlg_jour_offset' not in st.session_state:
+        st.session_state['wlg_jour_offset'] = 0
 
     lundi = today - timedelta(days=today.weekday())
-    sem_debut = lundi + timedelta(weeks=st.session_state['wlg_sem_offset'])
+    sem_debut = lundi + timedelta(days=st.session_state['wlg_jour_offset'])
     sem_fin = sem_debut + timedelta(days=6)
 
-    col_n1, col_n2, col_n3 = st.columns([1, 3, 1])
-    if col_n1.button("← Préc.", key="wlg_prev"):
-        st.session_state['wlg_sem_offset'] -= 1
+    col_n1, col_n2, col_n3, col_n4, col_n5 = st.columns([1, 1, 4, 1, 1])
+    if col_n1.button("⏮ Sem.", key="wlg_prev_sem"):
+        st.session_state['wlg_jour_offset'] -= 7
         st.rerun()
-    col_n2.markdown(
-        f"<h4 style='text-align:center;color:{hc}'>"
-        f"Semaine du {sem_debut.strftime('%d/%m')} au {sem_fin.strftime('%d/%m/%Y')}</h4>",
+    if col_n2.button("← Jour", key="wlg_prev_jour"):
+        st.session_state['wlg_jour_offset'] -= 1
+        st.rerun()
+    aligne_lundi = sem_debut.weekday() == 0
+    titre = (
+        f"Semaine du {sem_debut.strftime('%d/%m')} au {sem_fin.strftime('%d/%m/%Y')}"
+        if aligne_lundi
+        else f"Du {sem_debut.strftime('%a %d/%m')} au {sem_fin.strftime('%a %d/%m/%Y')}"
+    )
+    col_n3.markdown(
+        f"<h4 style='text-align:center;color:{hc}'>{titre}</h4>",
         unsafe_allow_html=True,
     )
-    if col_n3.button("Suiv. →", key="wlg_next"):
-        st.session_state['wlg_sem_offset'] += 1
+    if col_n4.button("Jour →", key="wlg_next_jour"):
+        st.session_state['wlg_jour_offset'] += 1
+        st.rerun()
+    if col_n5.button("Sem. ⏭", key="wlg_next_sem"):
+        st.session_state['wlg_jour_offset'] += 7
         st.rerun()
 
     if wlg_engins:
@@ -304,13 +315,13 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
             f"<table style='width:100%;border-collapse:collapse;'><thead><tr>"
             f"<th style='{th_s} text-align:left;min-width:58px;'>Engin</th>"
         )
-        for i, jour in enumerate(jours_sem):
+        for jour in jours_sem:
             is_today = jour == today
             j_color = '#f59e0b' if is_today else hc
             j_bg = "background:rgba(245,158,11,0.12);" if is_today else ""
             j_bold = "font-weight:800;" if is_today else ""
             grid += (f"<th style='{th_s}color:{j_color};{j_bg}{j_bold}min-width:78px;'>"
-                     f"{JOURS_FR[i]}<br>{jour.strftime('%d/%m')}</th>")
+                     f"{JOURS_FR[jour.weekday()]}<br>{jour.strftime('%d/%m')}</th>")
         grid += "</tr></thead><tbody>"
 
         prev_g = None

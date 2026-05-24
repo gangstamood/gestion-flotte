@@ -88,7 +88,7 @@ spreadsheet_id = "..."
 - Appel `inject_hamburger(t)` + `check_password(t)`
 - Appel `init_database()` + `_load_all_sheets()`
 - Chargement et dérivation des données en variables locales (toutes entités + golfettes + distribution_clefs)
-- Initialisation `st.session_state` (page, dashboard_detail, eng_sem_offset, wlg_sem_offset, wlg_golf_sem_offset, golf_sem_offset, _fk)
+- Initialisation `st.session_state` (page, dashboard_detail, eng_sem_offset, wlg_jour_offset, wlg_golf_jour_offset, golf_sem_offset, _fk)
 - Appel `render_sidebar(...)`
 - Routeur : dispatche vers toutes les pages selon `st.session_state.page`
 
@@ -357,8 +357,8 @@ Prochain rerun : 1 appel batchGet (données fraîches)
 - `dashboard_detail` — vue détail du dashboard (vehicules/scooters/engins/golfettes/None)
 - `dernier_bon` — dernier bon carburant généré (pour PDF)
 - `eng_sem_offset` — décalage semaine planning engins (page engins)
-- `wlg_sem_offset` — décalage semaine planning engins WLG
-- `wlg_golf_sem_offset` — décalage semaine planning golfettes WLG
+- `wlg_jour_offset` — décalage en jours de la fenêtre planning engins WLG (fenêtre glissante de 7 jours)
+- `wlg_golf_jour_offset` — décalage en jours de la fenêtre planning golfettes WLG (fenêtre glissante de 7 jours)
 - `golf_sem_offset` — décalage semaine planning golfettes (page golfettes)
 - `_fk` — compteur form key (incrémenté après soumission réussie pour reset les forms)
 
