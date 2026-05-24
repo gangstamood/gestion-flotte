@@ -239,7 +239,8 @@ def render_planning_golfettes_wlg(t, golfettes, attributions_golfettes):
     titre = (
         f"Semaine du {sem_debut.strftime('%d/%m')} au {sem_fin.strftime('%d/%m/%Y')}"
         if aligne_lundi
-        else f"Du {sem_debut.strftime('%a %d/%m')} au {sem_fin.strftime('%a %d/%m/%Y')}"
+        else f"Du {JOURS_FR[sem_debut.weekday()]} {sem_debut.strftime('%d/%m')} "
+             f"au {JOURS_FR[sem_fin.weekday()]} {sem_fin.strftime('%d/%m/%Y')}"
     )
     col_n3.markdown(
         f"<h4 style='text-align:center;color:{hc}'>{titre}</h4>",
