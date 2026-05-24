@@ -79,7 +79,18 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
 
     clefs = get_distribution_clefs()
 
-    actifs_today = [e for e in wlg_engins if _get_zone_for_day(e['numero_serie'], today, attributions_engins)]
+    # Engins WLG avec au moins une intervention "En cours"
+    en_intervention_ids = set()
+    for iv in (interventions_engins or []):
+        if iv.get('statut') == 'En cours' and iv.get('numero_serie') in wlg_ids:
+            en_intervention_ids.add(iv['numero_serie'])
+    nb_intervention = len(en_intervention_ids)
+
+    actifs_today = [
+        e for e in wlg_engins
+        if _get_zone_for_day(e['numero_serie'], today, attributions_engins)
+        or e['numero_serie'] in en_intervention_ids
+    ]
 
     en_circulation = []
     for e in actifs_today:
@@ -89,13 +100,6 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
 
     circ_ids = {e['numero_serie'] for e, _, _ in en_circulation}
     disponibles = [e for e in actifs_today if e['numero_serie'] not in circ_ids]
-
-    # Engins WLG avec au moins une intervention "En cours"
-    en_intervention_ids = set()
-    for iv in (interventions_engins or []):
-        if iv.get('statut') == 'En cours' and iv.get('numero_serie') in wlg_ids:
-            en_intervention_ids.add(iv['numero_serie'])
-    nb_intervention = len(en_intervention_ids)
 
     # En-tête
     st.markdown("# 🎪 Planning WLG26")
@@ -232,9 +236,16 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                 zone = _get_zone_for_day(num, today, attributions_engins) or ''
                 out, entry, _ = _clef_status(num, clefs)
                 zone_color = _zone_color(zone)
+                in_interv = num in en_intervention_ids
+
+                if in_interv:
+                    row_style = "background:rgba(249,115,22,0.10);border-left:3px solid #f97316;"
+                elif out and entry:
+                    row_style = "background:rgba(239,68,68,0.07);border-left:3px solid #ef4444;"
+                else:
+                    row_style = "background:rgba(16,185,129,0.05);border-left:3px solid #10b981;"
 
                 if out and entry:
-                    row_style = "background:rgba(239,68,68,0.07);border-left:3px solid #ef4444;"
                     nom_p = entry.get('nom', '')
                     heure_p = entry.get('heure', '')
                     clef_cell = (
@@ -242,8 +253,14 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                         f"<span style='color:{ic};font-size:0.8rem;margin-left:0.5rem;'>• {esc(heure_p)}</span>"
                     )
                 else:
-                    row_style = "background:rgba(16,185,129,0.05);border-left:3px solid #10b981;"
                     clef_cell = "<span style='color:#10b981;font-weight:600;'>🟢 Disponible</span>"
+
+                if in_interv:
+                    clef_cell += (
+                        "<span style='background:#f97316;color:white;padding:2px 8px;"
+                        "border-radius:8px;margin-left:0.5rem;font-size:0.72rem;font-weight:600;'>"
+                        "🔨 Intervention</span>"
+                    )
 
                 zone_badge = (
                     f"<span style='background:{zone_color};color:white;padding:3px 12px;"
