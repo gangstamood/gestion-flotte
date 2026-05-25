@@ -118,6 +118,45 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
 
     st.markdown("---")
 
+    # ── LIVRAISONS PRÉVUES POUR DEMAIN ─────────────────────────────────────
+    tomorrow = today + timedelta(days=1)
+    livraisons_demain = []
+    for e in wlg_engins:
+        num = e['numero_serie']
+        zone_tomorrow = _get_zone_for_day(num, tomorrow, attributions_engins)
+        zone_today = _get_zone_for_day(num, today, attributions_engins)
+        if zone_tomorrow and not zone_today:
+            livraisons_demain.append((e, zone_tomorrow))
+
+    if livraisons_demain:
+        demain_str = f"{JOURS_LONG[tomorrow.weekday()]} {tomorrow.day} {MOIS_FR[tomorrow.month - 1]}"
+        nb = len(livraisons_demain)
+        st.markdown(
+            f"### 🚚 À livrer cette nuit — pour {demain_str} "
+            f"<span style='color:{t['intro_color']};font-size:0.85rem;font-weight:400;'>"
+            f"({nb} engin{'s' if nb > 1 else ''})</span>",
+            unsafe_allow_html=True,
+        )
+        badges_html = ""
+        for groupe in GROUPE_ORDER:
+            g_items = [(e, z) for e, z in livraisons_demain if e['numero_serie'][0].upper() == groupe]
+            if not g_items:
+                continue
+            grp_icon, _ = GROUPE_INFO[groupe]
+            items_html = " ".join(
+                f"<span style='display:inline-block;background:{t['card_bg']};"
+                f"border:1px solid {t['card_border']};border-left:3px solid {_zone_color(z)};"
+                f"border-radius:8px;padding:0.35rem 0.7rem;margin:0.15rem;font-size:0.88rem;'>"
+                f"<b style='color:{t['h1_color']};'>{grp_icon} {esc(e['numero_serie'])}</b>"
+                f" <span style='background:{_zone_color(z)};color:white;padding:1px 8px;"
+                f"border-radius:8px;font-size:0.75rem;font-weight:600;margin-left:0.3rem;'>"
+                f"{esc(z)}</span></span>"
+                for e, z in g_items
+            )
+            badges_html += f"<div style='margin-bottom:0.3rem;'>{items_html}</div>"
+        st.markdown(badges_html, unsafe_allow_html=True)
+        st.markdown("---")
+
     # ── CLÉs EN CIRCULATION (priorité matin) ───────────────────────────────
     if en_circulation:
         st.markdown("### 🔴 Clés en circulation")
