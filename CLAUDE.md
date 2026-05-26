@@ -160,6 +160,8 @@ spreadsheet_id = "..."
 | numero_serie | Clé primaire (ex: C6, T3, N2) |
 | type | FK categories_engins |
 | marque | Taille · fourches/subtype (ex: "3T · Courtes", "18m · 4RM") |
+| numero_prestataire | N° interne loueur (optionnel) |
+| retard_livraison | Vide ou datetime "JJ/MM/AAAA HH:MM" — engin signalé non livré sur parc |
 
 ### attributions_engins
 | numero_serie | FK engins |
@@ -234,6 +236,8 @@ spreadsheet_id = "..."
 ### Engins
 - `add_engin()`, `retourner_engin(num_serie)`, `add_attribution_engin(num_serie, service, date_debut, date_fin, periode)`
 - `update_attribution_engin(idx, data)`, `delete_attribution_engin(idx)`
+- `marquer_retard_livraison_engin(num_serie)` — signale un engin non livré sur parc
+- `marquer_engin_recu(num_serie)` — lève le statut "non livré"
 
 ### Golfettes
 - `get_golfettes()` / `add_golfette()` / `delete_golfette()`

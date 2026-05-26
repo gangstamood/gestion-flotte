@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from database import (
     get_distribution_clefs, add_distribution_clef, retour_clef,
     add_attribution_engin,
+    marquer_retard_livraison_engin, marquer_engin_recu,
 )
 
 esc = html.escape
@@ -111,11 +112,15 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
         if c.get('categorie') == 'engin' and not c.get('retour_clef') and c.get('identifiant') in wlg_ids
     }
 
+    # Engins WLG signalés comme non livrés (retard de livraison loueur)
+    retard_ids = {e['numero_serie'] for e in wlg_engins if e.get('retard_livraison')}
+
     actifs_today = [
         e for e in wlg_engins
         if _get_zone_for_day(e['numero_serie'], today, attributions_engins)
         or e['numero_serie'] in en_intervention_ids
         or e['numero_serie'] in clef_out_ids
+        or e['numero_serie'] in retard_ids
     ]
 
     en_circulation = []
@@ -125,7 +130,11 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
             en_circulation.append((e, entry, idx))
 
     circ_ids = {e['numero_serie'] for e, _, _ in en_circulation}
-    disponibles = [e for e in actifs_today if e['numero_serie'] not in circ_ids]
+    nb_non_livres = sum(1 for e in actifs_today if e['numero_serie'] in retard_ids)
+    disponibles = [
+        e for e in actifs_today
+        if e['numero_serie'] not in circ_ids and e['numero_serie'] not in retard_ids
+    ]
 
     # En-tête
     st.markdown("# 🎪 Planning WLG26")
@@ -135,12 +144,13 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
     today_str = f"{JOURS_LONG[today.weekday()]} {today.day} {MOIS_FR[today.month - 1]} {today.year}"
     st.markdown(f"<p class='page-intro'>{today_str}</p>", unsafe_allow_html=True)
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     c1.metric("🚜 Engins WLG", len(wlg_engins))
     c2.metric("📅 Actifs aujourd'hui", len(actifs_today))
     c3.metric("🔴 Clés en circulation", len(en_circulation))
     c4.metric("🟢 Disponibles", len(disponibles))
     c5.metric("🔨 En intervention", nb_intervention)
+    c6.metric("🚚 En attente livraison", nb_non_livres)
 
     st.markdown("---")
 
@@ -270,11 +280,6 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
     hc = t['h23_color']
     ic = t['intro_color']
 
-    th = (f"padding:0.5rem 0.7rem; border:1px solid {cb}; background:{ib}; "
-          f"color:{hc}; font-weight:600; font-size:0.8rem; text-align:left;")
-    td = (f"padding:0.55rem 0.7rem; border:1px solid {cb}; "
-          f"font-size:0.85rem; vertical-align:middle;")
-
     engin_map = {e['numero_serie']: e for e in wlg_engins}
 
     if not actifs_today:
@@ -287,74 +292,101 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
             grp_icon, grp_label = GROUPE_INFO[groupe]
             st.markdown(f"**{grp_icon} {grp_label}**")
 
-            table = (
-                f"<div style='overflow-x:auto;margin-bottom:1.4rem;'>"
-                f"<table style='width:100%;border-collapse:collapse;'><thead><tr>"
-                f"<th style='{th} width:65px;'>ID</th>"
-                f"<th style='{th} width:90px;'>N° loueur</th>"
-                f"<th style='{th} width:130px;'>Tonnage · Fourches</th>"
-                f"<th style='{th}'>Équipe</th>"
-                f"<th style='{th}'>Statut clé</th>"
-                f"</tr></thead><tbody>"
-            )
-
             for eng in g_engins:
                 num = eng['numero_serie']
                 marque = eng.get('marque', '')
                 num_pre = engin_map.get(num, {}).get('numero_prestataire', '') or ''
                 zone_today = _get_zone_for_day(num, today, attributions_engins)
                 out, entry, _ = _clef_status(num, clefs)
+                non_livre = num in retard_ids
                 if zone_today:
                     zone = zone_today
                 elif out:
                     zone = _get_zone_upcoming(num, today, attributions_engins) or 'Anticipée'
+                elif non_livre:
+                    zone = _get_zone_upcoming(num, today, attributions_engins) or ''
                 else:
                     zone = ''
                 zone_color = _zone_color(zone)
                 in_interv = num in en_intervention_ids
 
-                if in_interv:
-                    row_style = "background:rgba(249,115,22,0.10);border-left:3px solid #f97316;"
+                # Style de bordure selon le statut (priorité non livré > intervention > clé > dispo)
+                if non_livre:
+                    border_color = '#a16207'  # ambre foncé
+                    bg_tint = 'rgba(161,98,7,0.08)'
+                elif in_interv:
+                    border_color = '#f97316'
+                    bg_tint = 'rgba(249,115,22,0.10)'
                 elif out and entry:
-                    row_style = "background:rgba(239,68,68,0.07);border-left:3px solid #ef4444;"
+                    border_color = '#ef4444'
+                    bg_tint = 'rgba(239,68,68,0.07)'
                 else:
-                    row_style = "background:rgba(16,185,129,0.05);border-left:3px solid #10b981;"
+                    border_color = '#10b981'
+                    bg_tint = 'rgba(16,185,129,0.05)'
 
+                # Statut clé
                 if out and entry:
                     nom_p = entry.get('nom', '')
                     heure_p = entry.get('heure', '')
-                    clef_cell = (
+                    clef_html = (
                         f"<span style='color:#ef4444;font-weight:600;'>🔴 {esc(nom_p)}</span>"
-                        f"<span style='color:{ic};font-size:0.8rem;margin-left:0.5rem;'>• {esc(heure_p)}</span>"
+                        f"<span style='color:{ic};font-size:0.8rem;margin-left:0.4rem;'>• {esc(heure_p)}</span>"
                     )
                 else:
-                    clef_cell = "<span style='color:#10b981;font-weight:600;'>🟢 Disponible</span>"
+                    clef_html = "<span style='color:#10b981;font-weight:600;'>🟢 Disponible</span>"
 
+                badges = ""
+                if non_livre:
+                    retard_dt = eng.get('retard_livraison', '')
+                    badges += (
+                        f"<span style='background:#a16207;color:white;padding:2px 8px;"
+                        f"border-radius:8px;margin-left:0.4rem;font-size:0.72rem;font-weight:600;'"
+                        f" title='Signalé le {esc(retard_dt)}'>🚚 Non livré</span>"
+                    )
                 if in_interv:
-                    clef_cell += (
+                    badges += (
                         "<span style='background:#f97316;color:white;padding:2px 8px;"
-                        "border-radius:8px;margin-left:0.5rem;font-size:0.72rem;font-weight:600;'>"
+                        "border-radius:8px;margin-left:0.4rem;font-size:0.72rem;font-weight:600;'>"
                         "🔨 Intervention</span>"
                     )
 
                 zone_badge = (
-                    f"<span style='background:{zone_color};color:white;padding:3px 12px;"
-                    f"border-radius:12px;font-weight:600;font-size:0.82rem;'>{esc(zone)}</span>"
+                    f"<span style='background:{zone_color};color:white;padding:3px 10px;"
+                    f"border-radius:10px;font-weight:600;font-size:0.78rem;'>{esc(zone)}</span>"
                 ) if zone else f"<span style='color:{ic}'>—</span>"
 
-                pre_cell = f"<span style='color:{ic};font-size:0.82rem;'>{esc(num_pre)}</span>" if num_pre else f"<span style='color:{ic};opacity:0.4;'>—</span>"
-                table += (
-                    f"<tr style='{row_style}'>"
-                    f"<td style='{td} font-weight:700;font-size:1.05rem;color:{hc};'>{esc(num)}</td>"
-                    f"<td style='{td}'>{pre_cell}</td>"
-                    f"<td style='{td} color:{ic};font-size:0.8rem;'>{esc(marque)}</td>"
-                    f"<td style='{td}'>{zone_badge}</td>"
-                    f"<td style='{td}'>{clef_cell}</td>"
-                    f"</tr>"
-                )
+                pre_html = (
+                    f"<span style='color:{ic};font-size:0.78rem;'>N° {esc(num_pre)}</span>"
+                ) if num_pre else ""
+                marque_html = (
+                    f"<span style='color:{ic};font-size:0.78rem;'>{esc(marque)}</span>"
+                ) if marque else ""
 
-            table += "</tbody></table></div>"
-            st.markdown(table, unsafe_allow_html=True)
+                col_info, col_btn = st.columns([7, 1.5])
+                col_info.markdown(
+                    f"<div style='background:{bg_tint};border:1px solid {cb};"
+                    f"border-left:3px solid {border_color};border-radius:8px;"
+                    f"padding:0.5rem 0.8rem;margin-bottom:0.35rem;"
+                    f"display:flex;flex-wrap:wrap;align-items:center;gap:0.6rem;'>"
+                    f"<span style='font-weight:700;font-size:1.05rem;color:{hc};min-width:48px;'>{esc(num)}</span>"
+                    f"<span style='min-width:90px;'>{pre_html}</span>"
+                    f"<span style='min-width:120px;'>{marque_html}</span>"
+                    f"<span>{zone_badge}</span>"
+                    f"<span style='flex:1;'>{clef_html}{badges}</span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+                with col_btn:
+                    if non_livre:
+                        if st.button("✅ Reçu", key=f"recu_{num}", type="primary", use_container_width=True):
+                            marquer_engin_recu(num)
+                            st.success(f"✅ {num} marqué reçu sur parc")
+                            st.rerun()
+                    else:
+                        if st.button("🚚 Non livré", key=f"nonlivre_{num}", use_container_width=True):
+                            marquer_retard_livraison_engin(num)
+                            st.warning(f"🚚 {num} signalé non livré")
+                            st.rerun()
 
     # ── PLANNING SEMAINE ───────────────────────────────────────────────────
     st.markdown("---")

@@ -329,6 +329,24 @@ def update_engin_prestataire(num_serie, numero_prestataire):
             break
     write_sheet('engins', engins, prev_size=len(engins))
 
+def marquer_retard_livraison_engin(num_serie):
+    """Signale qu'un engin censé être sur parc n'a pas encore été livré."""
+    engins = _cached('engins')
+    for e in engins:
+        if e.get('numero_serie') == num_serie:
+            e['retard_livraison'] = datetime.now(_TZ).strftime("%d/%m/%Y %H:%M")
+            break
+    write_sheet('engins', engins, prev_size=len(engins))
+
+def marquer_engin_recu(num_serie):
+    """Lève le statut 'non livré' une fois l'engin réellement reçu sur parc."""
+    engins = _cached('engins')
+    for e in engins:
+        if e.get('numero_serie') == num_serie:
+            e['retard_livraison'] = ''
+            break
+    write_sheet('engins', engins, prev_size=len(engins))
+
 def delete_engin(num_serie):
     engins = _cached('engins')
     new = [e for e in engins if e.get('numero_serie') != num_serie]
