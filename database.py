@@ -347,6 +347,24 @@ def marquer_engin_recu(num_serie):
             break
     write_sheet('engins', engins, prev_size=len(engins))
 
+def marquer_livraison_anticipee_engin(num_serie):
+    """Signale qu'un engin est arrivé sur parc avant sa date de planning."""
+    engins = _cached('engins')
+    for e in engins:
+        if e.get('numero_serie') == num_serie:
+            e['livraison_anticipee'] = datetime.now(_TZ).strftime("%d/%m/%Y %H:%M")
+            break
+    write_sheet('engins', engins, prev_size=len(engins))
+
+def annuler_livraison_anticipee_engin(num_serie):
+    """Lève le statut 'livré en avance' (l'engin n'est plus considéré comme en avance)."""
+    engins = _cached('engins')
+    for e in engins:
+        if e.get('numero_serie') == num_serie:
+            e['livraison_anticipee'] = ''
+            break
+    write_sheet('engins', engins, prev_size=len(engins))
+
 def delete_engin(num_serie):
     engins = _cached('engins')
     new = [e for e in engins if e.get('numero_serie') != num_serie]

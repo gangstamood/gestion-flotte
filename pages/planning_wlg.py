@@ -6,6 +6,7 @@ from database import (
     get_distribution_clefs, add_distribution_clef, retour_clef,
     add_attribution_engin,
     marquer_retard_livraison_engin, marquer_engin_recu,
+    marquer_livraison_anticipee_engin, annuler_livraison_anticipee_engin,
 )
 
 esc = html.escape
@@ -115,12 +116,16 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
     # Engins WLG signalés comme non livrés (retard de livraison loueur)
     retard_ids = {e['numero_serie'] for e in wlg_engins if e.get('retard_livraison')}
 
+    # Engins WLG signalés comme livrés en avance (présents avant leur date de planning)
+    avance_ids = {e['numero_serie'] for e in wlg_engins if e.get('livraison_anticipee')}
+
     actifs_today = [
         e for e in wlg_engins
         if _get_zone_for_day(e['numero_serie'], today, attributions_engins)
         or e['numero_serie'] in en_intervention_ids
         or e['numero_serie'] in clef_out_ids
         or e['numero_serie'] in retard_ids
+        or e['numero_serie'] in avance_ids
     ]
 
     en_circulation = []
@@ -131,6 +136,12 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
 
     circ_ids = {e['numero_serie'] for e, _, _ in en_circulation}
     nb_non_livres = sum(1 for e in actifs_today if e['numero_serie'] in retard_ids)
+    # On ne compte "en avance" que les engins pas encore dans leur planning du jour
+    nb_avance = sum(
+        1 for e in actifs_today
+        if e['numero_serie'] in avance_ids
+        and not _get_zone_for_day(e['numero_serie'], today, attributions_engins)
+    )
     disponibles = [
         e for e in actifs_today
         if e['numero_serie'] not in circ_ids and e['numero_serie'] not in retard_ids
@@ -144,13 +155,14 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
     today_str = f"{JOURS_LONG[today.weekday()]} {today.day} {MOIS_FR[today.month - 1]} {today.year}"
     st.markdown(f"<p class='page-intro'>{today_str}</p>", unsafe_allow_html=True)
 
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
     c1.metric("🚜 Engins WLG", len(wlg_engins))
     c2.metric("📅 Actifs aujourd'hui", len(actifs_today))
     c3.metric("🔴 Clés en circulation", len(en_circulation))
     c4.metric("🟢 Disponibles", len(disponibles))
     c5.metric("🔨 En intervention", nb_intervention)
     c6.metric("🚚 En attente livraison", nb_non_livres)
+    c7.metric("📦 Livré en avance", nb_avance)
 
     st.markdown("---")
 
@@ -159,6 +171,9 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
     livraisons_demain = []
     for e in wlg_engins:
         num = e['numero_serie']
+        if num in avance_ids:
+            # déjà signalé livré en avance → présent dans le tableau actifs
+            continue
         zone_tomorrow = _get_zone_for_day(num, tomorrow, attributions_engins)
         zone_today = _get_zone_for_day(num, today, attributions_engins)
         if zone_tomorrow and not zone_today:
@@ -173,24 +188,47 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
             f"({nb} engin{'s' if nb > 1 else ''})</span>",
             unsafe_allow_html=True,
         )
-        badges_html = ""
-        for groupe in GROUPE_ORDER:
-            g_items = [(e, z) for e, z in livraisons_demain if e['numero_serie'][0].upper() == groupe]
-            if not g_items:
-                continue
-            grp_icon, _ = GROUPE_INFO[groupe]
-            items_html = " ".join(
-                f"<span style='display:inline-block;background:{t['card_bg']};"
-                f"border:1px solid {t['card_border']};border-left:3px solid {_zone_color(z)};"
-                f"border-radius:8px;padding:0.35rem 0.7rem;margin:0.15rem;font-size:0.88rem;'>"
-                f"<b style='color:{t['h1_color']};'>{grp_icon} {esc(e['numero_serie'])}</b>"
-                f" <span style='background:{_zone_color(z)};color:white;padding:1px 8px;"
-                f"border-radius:8px;font-size:0.75rem;font-weight:600;margin-left:0.3rem;'>"
-                f"{esc(z)}</span></span>"
-                for e, z in g_items
+        for e, z in livraisons_demain:
+            num = e['numero_serie']
+            grp_icon = GROUPE_INFO.get(num[0].upper(), ('🚜', ''))[0]
+            zc = _zone_color(z)
+            col_info, col_btn = st.columns([7, 1.5])
+            col_info.markdown(
+                f"<div style='background:{t['card_bg']};border:1px solid {t['card_border']};"
+                f"border-left:3px solid {zc};border-radius:8px;"
+                f"padding:0.4rem 0.8rem;margin-bottom:0.3rem;'>"
+                f"<b style='color:{t['h1_color']};font-size:1rem;'>{grp_icon} {esc(num)}</b>"
+                f"<span style='background:{zc};color:white;padding:2px 10px;"
+                f"border-radius:10px;font-size:0.78rem;font-weight:600;margin-left:0.6rem;'>"
+                f"{esc(z)}</span>"
+                f"</div>",
+                unsafe_allow_html=True,
             )
-            badges_html += f"<div style='margin-bottom:0.3rem;'>{items_html}</div>"
-        st.markdown(badges_html, unsafe_allow_html=True)
+            if col_btn.button("📦 Déjà livré", key=f"avance_{num}", use_container_width=True):
+                marquer_livraison_anticipee_engin(num)
+                st.success(f"📦 {num} signalé livré en avance")
+                st.rerun()
+        st.markdown("---")
+
+    # ── SIGNALER UNE LIVRAISON ANTICIPÉE (autres jours) ────────────────────
+    non_actifs = [
+        e for e in wlg_engins
+        if e['numero_serie'] not in {a['numero_serie'] for a in actifs_today}
+        and e['numero_serie'] not in {e2['numero_serie'] for e2, _ in livraisons_demain}
+    ]
+    if non_actifs:
+        with st.expander("📦 Signaler une livraison anticipée (autre jour)"):
+            def _label_av(e):
+                num = e['numero_serie']
+                z_up = _get_zone_upcoming(num, today, attributions_engins)
+                return f"{num} — prochaine zone : {z_up}" if z_up else f"{num} — pas de planning à venir"
+            opts = [_label_av(e) for e in non_actifs]
+            sel = st.selectbox("Engin *", opts, key="wlg_av_sel")
+            sel_num = sel.split(" — ")[0]
+            if st.button("📦 Signaler livré en avance", key="wlg_av_btn", type="primary"):
+                marquer_livraison_anticipee_engin(sel_num)
+                st.success(f"📦 {sel_num} signalé livré en avance")
+                st.rerun()
         st.markdown("---")
 
     # ── CLÉs EN CIRCULATION (priorité matin) ───────────────────────────────
@@ -299,10 +337,14 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                 zone_today = _get_zone_for_day(num, today, attributions_engins)
                 out, entry, _ = _clef_status(num, clefs)
                 non_livre = num in retard_ids
+                # "livré en avance" effectif : flag set ET pas encore dans son planning
+                en_avance = (num in avance_ids) and not zone_today
                 if zone_today:
                     zone = zone_today
                 elif out:
                     zone = _get_zone_upcoming(num, today, attributions_engins) or 'Anticipée'
+                elif en_avance:
+                    zone = _get_zone_upcoming(num, today, attributions_engins) or ''
                 elif non_livre:
                     zone = _get_zone_upcoming(num, today, attributions_engins) or ''
                 else:
@@ -310,7 +352,8 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                 zone_color = _zone_color(zone)
                 in_interv = num in en_intervention_ids
 
-                # Style de bordure selon le statut (priorité non livré > intervention > clé > dispo)
+                # Style de bordure selon le statut
+                # (priorité non livré > intervention > clé sortie > livré en avance > dispo)
                 if non_livre:
                     border_color = '#a16207'  # ambre foncé
                     bg_tint = 'rgba(161,98,7,0.08)'
@@ -320,6 +363,9 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                 elif out and entry:
                     border_color = '#ef4444'
                     bg_tint = 'rgba(239,68,68,0.07)'
+                elif en_avance:
+                    border_color = '#0ea5e9'  # bleu cyan
+                    bg_tint = 'rgba(14,165,233,0.08)'
                 else:
                     border_color = '#10b981'
                     bg_tint = 'rgba(16,185,129,0.05)'
@@ -342,6 +388,13 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                         f"<span style='background:#a16207;color:white;padding:2px 8px;"
                         f"border-radius:8px;margin-left:0.4rem;font-size:0.72rem;font-weight:600;'"
                         f" title='Signalé le {esc(retard_dt)}'>🚚 Non livré</span>"
+                    )
+                if en_avance:
+                    avance_dt = eng.get('livraison_anticipee', '')
+                    badges += (
+                        f"<span style='background:#0ea5e9;color:white;padding:2px 8px;"
+                        f"border-radius:8px;margin-left:0.4rem;font-size:0.72rem;font-weight:600;'"
+                        f" title='Signalé le {esc(avance_dt)}'>📦 Livré en avance</span>"
                     )
                 if in_interv:
                     badges += (
@@ -381,6 +434,11 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                         if st.button("✅ Reçu", key=f"recu_{num}", type="primary", use_container_width=True):
                             marquer_engin_recu(num)
                             st.success(f"✅ {num} marqué reçu sur parc")
+                            st.rerun()
+                    elif en_avance:
+                        if st.button("↩️ Annuler avance", key=f"unav_{num}", use_container_width=True):
+                            annuler_livraison_anticipee_engin(num)
+                            st.info(f"↩️ {num} : livraison anticipée annulée")
                             st.rerun()
                     else:
                         if st.button("🚚 Non livré", key=f"nonlivre_{num}", use_container_width=True):

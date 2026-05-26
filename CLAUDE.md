@@ -162,6 +162,7 @@ spreadsheet_id = "..."
 | marque | Taille · fourches/subtype (ex: "3T · Courtes", "18m · 4RM") |
 | numero_prestataire | N° interne loueur (optionnel) |
 | retard_livraison | Vide ou datetime "JJ/MM/AAAA HH:MM" — engin signalé non livré sur parc |
+| livraison_anticipee | Vide ou datetime "JJ/MM/AAAA HH:MM" — engin signalé livré en avance |
 
 ### attributions_engins
 | numero_serie | FK engins |
@@ -238,6 +239,8 @@ spreadsheet_id = "..."
 - `update_attribution_engin(idx, data)`, `delete_attribution_engin(idx)`
 - `marquer_retard_livraison_engin(num_serie)` — signale un engin non livré sur parc
 - `marquer_engin_recu(num_serie)` — lève le statut "non livré"
+- `marquer_livraison_anticipee_engin(num_serie)` — signale un engin livré en avance
+- `annuler_livraison_anticipee_engin(num_serie)` — lève le statut "livré en avance"
 
 ### Golfettes
 - `get_golfettes()` / `add_golfette()` / `delete_golfette()`
