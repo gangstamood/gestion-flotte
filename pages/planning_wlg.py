@@ -62,6 +62,25 @@ def _get_zone_for_day(num_serie, day, attributions_engins):
     return best
 
 
+def _get_zone_upcoming(num_serie, today, attributions_engins):
+    """Retourne la zone de la prochaine attribution à venir (ou en cours)."""
+    best = None
+    best_date = None
+    for a in attributions_engins:
+        if a.get('numero_serie') != num_serie or a.get('retourne'):
+            continue
+        try:
+            dd = datetime.strptime(a['date'], "%d/%m/%Y").date()
+            df = datetime.strptime(a.get('date_fin', a['date']), "%d/%m/%Y").date()
+            if df >= today:
+                if best_date is None or dd < best_date:
+                    best = a.get('service', '')
+                    best_date = dd
+        except Exception:
+            pass
+    return best
+
+
 def _clef_status(num_serie, clefs):
     """Retourne (en_circulation, entry, idx) pour l'état courant de la clé."""
     for i, c in enumerate(clefs):
@@ -86,10 +105,17 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
             en_intervention_ids.add(iv['numero_serie'])
     nb_intervention = len(en_intervention_ids)
 
+    # Engins WLG avec une clé en circulation (inclut les mises en circulation anticipées)
+    clef_out_ids = {
+        c.get('identifiant') for c in clefs
+        if c.get('categorie') == 'engin' and not c.get('retour_clef') and c.get('identifiant') in wlg_ids
+    }
+
     actifs_today = [
         e for e in wlg_engins
         if _get_zone_for_day(e['numero_serie'], today, attributions_engins)
         or e['numero_serie'] in en_intervention_ids
+        or e['numero_serie'] in clef_out_ids
     ]
 
     en_circulation = []
@@ -162,7 +188,11 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
         st.markdown("### 🔴 Clés en circulation")
         for eng, entry, idx in en_circulation:
             num = eng['numero_serie']
-            zone = _get_zone_for_day(num, today, attributions_engins) or '?'
+            zone = (
+                _get_zone_for_day(num, today, attributions_engins)
+                or _get_zone_upcoming(num, today, attributions_engins)
+                or 'Anticipée'
+            )
             nom = entry.get('nom', '')
             heure = entry.get('heure', '')
             zone_color = _zone_color(zone)
@@ -272,8 +302,14 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                 num = eng['numero_serie']
                 marque = eng.get('marque', '')
                 num_pre = engin_map.get(num, {}).get('numero_prestataire', '') or ''
-                zone = _get_zone_for_day(num, today, attributions_engins) or ''
+                zone_today = _get_zone_for_day(num, today, attributions_engins)
                 out, entry, _ = _clef_status(num, clefs)
+                if zone_today:
+                    zone = zone_today
+                elif out:
+                    zone = _get_zone_upcoming(num, today, attributions_engins) or 'Anticipée'
+                else:
+                    zone = ''
                 zone_color = _zone_color(zone)
                 in_interv = num in en_intervention_ids
 

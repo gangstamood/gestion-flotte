@@ -49,6 +49,23 @@ def _get_zone_for_day(num_serie, day, attributions):
     return best
 
 
+def _get_zone_upcoming(num_serie, today, attributions):
+    best, best_date = None, None
+    for a in attributions:
+        if a.get('numero_serie') != num_serie or a.get('retourne'):
+            continue
+        try:
+            dd = datetime.strptime(a['date'], "%d/%m/%Y").date()
+            df = datetime.strptime(a.get('date_fin', a['date']), "%d/%m/%Y").date()
+            if df >= today:
+                if best_date is None or dd < best_date:
+                    best = a.get('service', '')
+                    best_date = dd
+        except Exception:
+            pass
+    return best
+
+
 def _clef_status(num_serie, clefs):
     for i, c in enumerate(clefs):
         if c.get('identifiant') == num_serie and c.get('categorie') == 'golfette' and not c.get('retour_clef'):
@@ -62,7 +79,17 @@ def render_planning_golfettes_wlg(t, golfettes, attributions_golfettes):
     golfettes_sorted = sorted(golfettes, key=_sort_key)
     clefs = get_distribution_clefs()
 
-    actifs_today = [g for g in golfettes_sorted if _get_zone_for_day(g['numero_serie'], today, attributions_golfettes)]
+    golf_ids = {g['numero_serie'] for g in golfettes_sorted}
+    clef_out_ids = {
+        c.get('identifiant') for c in clefs
+        if c.get('categorie') == 'golfette' and not c.get('retour_clef') and c.get('identifiant') in golf_ids
+    }
+
+    actifs_today = [
+        g for g in golfettes_sorted
+        if _get_zone_for_day(g['numero_serie'], today, attributions_golfettes)
+        or g['numero_serie'] in clef_out_ids
+    ]
 
     en_circulation = []
     for g in actifs_today:
@@ -94,7 +121,11 @@ def render_planning_golfettes_wlg(t, golfettes, attributions_golfettes):
         st.markdown("### 🔴 Clés en circulation")
         for golf, entry, idx in en_circulation:
             num = golf['numero_serie']
-            zone = _get_zone_for_day(num, today, attributions_golfettes) or '?'
+            zone = (
+                _get_zone_for_day(num, today, attributions_golfettes)
+                or _get_zone_upcoming(num, today, attributions_golfettes)
+                or 'Anticipée'
+            )
             nom = entry.get('nom', '')
             heure = entry.get('heure', '')
             zone_color = _zone_color(zone)
@@ -185,8 +216,14 @@ def render_planning_golfettes_wlg(t, golfettes, attributions_golfettes):
         for g in actifs_today:
             num = g['numero_serie']
             type_g = g.get('type', '')
-            zone = _get_zone_for_day(num, today, attributions_golfettes) or ''
+            zone_today = _get_zone_for_day(num, today, attributions_golfettes)
             out, entry, _ = _clef_status(num, clefs)
+            if zone_today:
+                zone = zone_today
+            elif out:
+                zone = _get_zone_upcoming(num, today, attributions_golfettes) or 'Anticipée'
+            else:
+                zone = ''
             zone_color = _zone_color(zone)
 
             if out and entry:
