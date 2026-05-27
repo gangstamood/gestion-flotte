@@ -116,6 +116,12 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
     # Engins WLG signalés comme non livrés (retard de livraison loueur)
     retard_ids = {e['numero_serie'] for e in wlg_engins if e.get('retard_livraison')}
 
+    # Engins ayant déjà eu une clé distribuée (preuve qu'ils ont été sur parc)
+    deja_recu_ids = {
+        c.get('identifiant') for c in clefs
+        if c.get('categorie') == 'engin'
+    }
+
     # Engins WLG signalés comme livrés en avance (présents avant leur date de planning)
     avance_ids = {e['numero_serie'] for e in wlg_engins if e.get('livraison_anticipee')}
 
@@ -429,6 +435,10 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                     f"</div>",
                     unsafe_allow_html=True,
                 )
+                # L'engin est considéré sur parc si clé en circulation, intervention,
+                # ou clé déjà distribuée par le passé → masque le bouton "Non livré"
+                sur_parc = out or in_interv or num in deja_recu_ids
+
                 with col_btn:
                     if non_livre:
                         if st.button("✅ Reçu", key=f"recu_{num}", type="primary", use_container_width=True):
@@ -440,7 +450,7 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
                             annuler_livraison_anticipee_engin(num)
                             st.info(f"↩️ {num} : livraison anticipée annulée")
                             st.rerun()
-                    else:
+                    elif not sur_parc:
                         if st.button("🚚 Non livré", key=f"nonlivre_{num}", use_container_width=True):
                             marquer_retard_livraison_engin(num)
                             st.warning(f"🚚 {num} signalé non livré")
