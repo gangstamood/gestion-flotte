@@ -142,12 +142,6 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
 
     circ_ids = {e['numero_serie'] for e, _, _ in en_circulation}
     nb_non_livres = sum(1 for e in actifs_today if e['numero_serie'] in retard_ids)
-    # On ne compte "en avance" que les engins pas encore dans leur planning du jour
-    nb_avance = sum(
-        1 for e in actifs_today
-        if e['numero_serie'] in avance_ids
-        and not _get_zone_for_day(e['numero_serie'], today, attributions_engins)
-    )
     disponibles = [
         e for e in actifs_today
         if e['numero_serie'] not in circ_ids and e['numero_serie'] not in retard_ids
@@ -161,14 +155,13 @@ def render_planning_wlg(t, engins, attributions_engins, interventions_engins=Non
     today_str = f"{JOURS_LONG[today.weekday()]} {today.day} {MOIS_FR[today.month - 1]} {today.year}"
     st.markdown(f"<p class='page-intro'>{today_str}</p>", unsafe_allow_html=True)
 
-    c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     c1.metric("🚜 Engins WLG", len(wlg_engins))
     c2.metric("📅 Actifs aujourd'hui", len(actifs_today))
     c3.metric("🔴 Clés en circulation", len(en_circulation))
     c4.metric("🟢 Disponibles", len(disponibles))
     c5.metric("🔨 En intervention", nb_intervention)
     c6.metric("🚚 En attente livraison", nb_non_livres)
-    c7.metric("📦 Livré en avance", nb_avance)
 
     st.markdown("---")
 
