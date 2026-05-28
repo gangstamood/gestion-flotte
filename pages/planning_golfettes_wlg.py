@@ -4,7 +4,7 @@ import streamlit as st
 from datetime import datetime, timedelta
 from database import (
     get_distribution_clefs, add_distribution_clef, retour_clef,
-    add_attribution_golfette,
+    add_attribution_golfette, ecraser_attributions_golfette_periode,
 )
 
 esc = html.escape
@@ -41,7 +41,9 @@ def _get_zone_for_day(num_serie, day, attributions):
             df = datetime.strptime(a.get('date_fin', a['date']), "%d/%m/%Y").date()
             if dd <= day <= df:
                 dur = (df - dd).days
-                if best_dur is None or dur < best_dur:
+                # `<=` : à durée égale la dernière attribution rencontrée gagne,
+                # ce qui permet à un ajustement manuel d'écraser un planning existant.
+                if best_dur is None or dur <= best_dur:
                     best = a.get('service', '')
                     best_dur = dur
         except Exception:
@@ -368,12 +370,10 @@ def render_planning_golfettes_wlg(t, golfettes, attributions_golfettes):
                 if st.form_submit_button("✅ Confirmer", type="primary"):
                     if zone_adj.strip() and date_fin_v >= date_deb:
                         num = golf_adj.split(" — ")[0]
-                        add_attribution_golfette(
-                            num, zone_adj.strip(),
-                            date_deb.strftime("%d/%m/%Y"),
-                            date_fin_v.strftime("%d/%m/%Y"),
-                            "Journée",
-                        )
+                        date_deb_s = date_deb.strftime("%d/%m/%Y")
+                        date_fin_s = date_fin_v.strftime("%d/%m/%Y")
+                        ecraser_attributions_golfette_periode(num, date_deb_s, date_fin_s)
+                        add_attribution_golfette(num, zone_adj.strip(), date_deb_s, date_fin_s, "Journée")
                         st.success(f"✅ {num} → {zone_adj.strip()} du {date_deb.strftime('%d/%m')} au {date_fin_v.strftime('%d/%m')}")
                         st.session_state['_fk'] = st.session_state.get('_fk', 0) + 1
                         st.rerun()

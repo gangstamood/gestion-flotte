@@ -388,6 +388,12 @@ def _is_engin_active_today(attr):
 def add_attribution_engin(num_serie, service, date_debut, date_fin, periode):
     append_row('attributions_engins', {'numero_serie': num_serie, 'service': service, 'date': date_debut, 'date_fin': date_fin, 'periode': periode, 'retourne': ''})
 
+def ecraser_attributions_engin_periode(num_serie, date_debut, date_fin):
+    """Marque comme retournées les attributions de l'engin entièrement contenues
+    dans [date_debut, date_fin]. Permet à une nouvelle attribution manuelle de
+    remplacer le planning existant sur cette période. Retourne le nombre marqué."""
+    return _ecraser_attr_periode('attributions_engins', num_serie, date_debut, date_fin)
+
 def retourner_engin(num_serie):
     attributions = _cached('attributions_engins')
     for attr in reversed(attributions):
@@ -584,6 +590,35 @@ def get_attributions_golfettes():
 
 def add_attribution_golfette(num_serie, service, date_debut, date_fin, periode):
     append_row('attributions_golfettes', {'numero_serie': num_serie, 'service': service, 'date': date_debut, 'date_fin': date_fin, 'periode': periode, 'retourne': ''})
+
+def ecraser_attributions_golfette_periode(num_serie, date_debut, date_fin):
+    """Idem ecraser_attributions_engin_periode mais pour les golfettes."""
+    return _ecraser_attr_periode('attributions_golfettes', num_serie, date_debut, date_fin)
+
+
+def _ecraser_attr_periode(sheet_name, num_serie, date_debut, date_fin):
+    try:
+        dd_new = datetime.strptime(date_debut, "%d/%m/%Y").date()
+        df_new = datetime.strptime(date_fin, "%d/%m/%Y").date()
+    except Exception:
+        return 0
+    attributions = _cached(sheet_name)
+    now_str = datetime.now(_TZ).strftime("%d/%m/%Y %H:%M")
+    n = 0
+    for attr in attributions:
+        if attr.get('numero_serie') != num_serie or attr.get('retourne'):
+            continue
+        try:
+            dd = datetime.strptime(attr['date'], "%d/%m/%Y").date()
+            df = datetime.strptime(attr.get('date_fin', attr['date']), "%d/%m/%Y").date()
+        except Exception:
+            continue
+        if dd_new <= dd and df <= df_new:
+            attr['retourne'] = now_str
+            n += 1
+    if n:
+        write_sheet(sheet_name, attributions, prev_size=len(attributions))
+    return n
 
 def retourner_golfette(num_serie):
     attributions = _cached('attributions_golfettes')
